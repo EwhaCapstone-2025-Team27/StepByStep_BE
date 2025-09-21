@@ -15,7 +15,7 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private String email;
 
-    @Column(length = 255, nullable = false)
+    @Column(nullable = false)
     private String passwordHash;
 
     @Column(length = 50, nullable = false, unique = true)
