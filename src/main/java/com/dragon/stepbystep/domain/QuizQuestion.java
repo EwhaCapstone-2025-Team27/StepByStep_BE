@@ -25,7 +25,7 @@ public class QuizQuestion {
     @Column
     private String correctText;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<QuizOption> options = new ArrayList<>();
 }
