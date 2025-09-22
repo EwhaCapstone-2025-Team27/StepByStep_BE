@@ -16,7 +16,7 @@ public class QuizScenario {
     @Column(length = 200, nullable = false)
     private String title;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "scenario", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<QuizQuestion> questions = new ArrayList<>();
 }

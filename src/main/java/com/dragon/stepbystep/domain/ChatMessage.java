@@ -28,6 +28,6 @@ public class ChatMessage {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
     private ChatAnswer answerMeta;
 }

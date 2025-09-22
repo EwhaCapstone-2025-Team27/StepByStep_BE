@@ -27,7 +27,7 @@ public class ChatSession {
     @Column(nullable = false)
     private LocalDateTime lastActivityAt;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ChatMessage> messages = new ArrayList<>();
 }
