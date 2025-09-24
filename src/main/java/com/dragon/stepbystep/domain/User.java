@@ -1,6 +1,5 @@
 package com.dragon.stepbystep.domain;
 
-import com.dragon.stepbystep.domain.BaseTimeEntity;
 import com.dragon.stepbystep.domain.enums.GenderType;
 import com.dragon.stepbystep.domain.enums.UserStatus;
 import jakarta.persistence.*;
@@ -18,7 +17,7 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private String passwordHash;
 
-    @Column(length = 50, nullable = false, unique = true)
+    @Column(length = 20, nullable = false, unique = true)
     private String nickname;
 
     @Enumerated(EnumType.STRING)
