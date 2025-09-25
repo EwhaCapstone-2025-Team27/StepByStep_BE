@@ -19,16 +19,16 @@ public class UserRegisterDto {
 
     private String nickname;
 
-    private String gender;
+    private GenderType gender;
 
-    private int birthyear;
+    private Integer birthyear;
 
     public User toEntity(String encodedPassword){
         User user = new User();
         user.setEmail(this.email);
-        user.setPasswordHash(this.password);
+        user.setPassword(encodedPassword);
         user.setNickname(this.nickname);
-        user.setGender(GenderType.valueOf(gender));
+        user.setGender(this.gender);
         user.setBirthyear(this.birthyear);
         return user;
     }

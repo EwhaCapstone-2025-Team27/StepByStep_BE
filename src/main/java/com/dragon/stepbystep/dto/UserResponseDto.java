@@ -1,6 +1,7 @@
 package com.dragon.stepbystep.dto;
 
 import com.dragon.stepbystep.domain.User;
+import com.dragon.stepbystep.domain.enums.GenderType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,15 +17,15 @@ public class UserResponseDto {
 
     private String nickname;
 
-    private String gender;
+    private GenderType gender;
 
-    private int birthyear;
+    private Integer birthyear;
 
     public static UserResponseDto fromEntity(User user) {
         return UserResponseDto.builder()
                 .email(user.getEmail())
                 .nickname(user.getNickname())
-                .gender(user.getGender().toString())
+                .gender(user.getGender())
                 .birthyear(user.getBirthyear())
                 .build();
     }
