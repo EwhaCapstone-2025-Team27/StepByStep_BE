@@ -11,42 +11,42 @@ import lombok.*;
 public class User extends BaseTimeEntity {
 
     @Id
-    @Column(nullable = false)
-    private String email;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false, updatable = false)
+    private Long id; // BIGINT UNSIGNED AUTO_INCREMENT
 
-    @Column(nullable = false)
-    private String password;
+    @Column(name = "login_id", nullable = false, length = 20, unique = true)
+    private String loginId; // lowercase only (DB CHECK), service/DTO에서 추가 검증 권장
 
-    @Column(length = 20, nullable = false, unique = true)
-    private String nickname;
+    @Column(name = "password_hash", nullable = false, length = 60)
+    private String passwordHash; // BCrypt(60)
+
+    @Column(name = "nickname", nullable = false, length = 50, unique = true)
+    private String nickname; // 3~10자 한/영/숫자 (서비스/DTO 검증)
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "gender", nullable = false, columnDefinition = "ENUM('F','M')")
     private GenderType gender;
 
-    @Column(nullable = false)
-    private Integer birthyear;
+    @Column(name = "birthyear", nullable = false, columnDefinition = "SMALLINT UNSIGNED")
+    private Integer birthyear; // 1900~현재년 (DB는 2100 체크, 서비스에서 범위 보강)
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false, length = 16)
+    @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
-    public void patch(User dto) {
-        if (dto.getEmail() != null && !dto.getEmail().equals(this.email)) {
-            throw new IllegalArgumentException("이메일은 수정할 수 없습니다.");
-        }
-        if (dto.getPassword() != null) {
-            this.password = dto.getPassword();
-        }
-        if (dto.getNickname() != null) {
-            this.nickname = dto.getNickname();
-        }
-        if (dto.getGender() != null) {
-            this.gender = dto.getGender();
-        }
-        if (dto.getBirthyear() > 0) {
-            this.birthyear = dto.getBirthyear();
-        }
 
+    // 편의 메서드
+    public void softDelete() {
+        this.status = UserStatus.DELETED;
+    }
+
+    public void changePassword(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+    }
+
+    public void changeNickname(String newNickname) {
+        this.nickname = newNickname;
     }
 }
