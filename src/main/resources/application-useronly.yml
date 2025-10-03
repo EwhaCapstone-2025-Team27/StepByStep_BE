@@ -1,5 +1,12 @@
 spring:
   # profiles: useronly
+  active:
+    mail:
+      host: localhost
+      port: 1025
+      properties:
+        mail.smtp.auth: false
+        mail.smtp.starttls.enable: false
   datasource:
     url: ${DB_URL}
     driver-class-name: ${DB_DRIVER}

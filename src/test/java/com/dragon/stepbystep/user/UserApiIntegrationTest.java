@@ -94,7 +94,7 @@ class UserApiIntegrationTest {
                 .andReturn();
 
         var body = loginResult.getResponse().getContentAsString();
-        var token = body.replaceAll(".*\\"accessToken\\"\\s*:\\s*\\"([^\\"]+)\\".*", "$1");
+        var token = body.replaceAll(".*\\\"accessToken\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
 
         mvc.perform(delete("/api/users/me")
                         .header("Authorization", "Bearer " + token))

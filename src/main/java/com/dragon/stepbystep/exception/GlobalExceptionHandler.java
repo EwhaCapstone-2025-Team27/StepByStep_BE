@@ -29,6 +29,14 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("BAD_REQUEST", e.getMessage(), status.value()));
     }
 
+    // 404 사용자 없음
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUserNotFound(UserNotFoundException e) {
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        return ResponseEntity.status(status)
+                .body(ApiResponse.error("USER_NOT_FOUND", e.getMessage(), status.value()));
+    }
+
     // 400 필수 파라미터 누락
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiResponse<Void>> handleMissingParam(MissingServletRequestParameterException e) {
