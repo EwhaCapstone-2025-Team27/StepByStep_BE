@@ -7,7 +7,7 @@ import com.dragon.stepbystep.exception.UserNotFoundException;
 import com.dragon.stepbystep.repository.UserRepository;
 import com.dragon.stepbystep.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -150,6 +150,21 @@ public class UserService {
         userRepository.save(user);
 
         mailService.sendTemporaryPasswordEmail(email, temporaryPassword, tempPasswordExpirationMinutes);
+    }
+
+    // 임시 비밀번호 생성
+    private String generateTemporaryPassword() {
+        if (tempPasswordLength <= 0) {
+            throw new IllegalStateException("임시 비밀번호 길이가 유효하지 않습니다.");
+        }
+
+        StringBuilder builder = new StringBuilder(tempPasswordLength);
+        for (int i = 0; i < tempPasswordLength; i++) {
+            int index = secureRandom.nextInt(TEMP_PASSWORD_CHARACTERS.length());
+            builder.append(TEMP_PASSWORD_CHARACTERS.charAt(index));
+        }
+
+        return builder.toString();
     }
 
     // 로그인

@@ -6,6 +6,9 @@ import lombok.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.IDENTITY;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,23 +19,18 @@ import java.time.LocalDateTime;
 @IdClass(QuizResponse.QuizResponseId.class)
 public class QuizResponse {
 
-    @Id
-    @Column
-    private Long attemptId;
+    @Id @GeneratedValue(strategy = IDENTITY)
+    private Long id;
 
-    @Id
-    @Column
-    private Long questionId;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(insertable = false, updatable = false)
+    @ManyToOne(fetch = LAZY, optional = false)
+    @JoinColumn(name = "attempt_id", nullable = false)
     private QuizAttempt attempt;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     private QuizQuestion question;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = LAZY)
     @JoinColumn
     private QuizOption option;
 
