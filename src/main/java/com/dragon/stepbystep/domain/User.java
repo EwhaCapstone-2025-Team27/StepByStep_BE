@@ -3,9 +3,11 @@ package com.dragon.stepbystep.domain;
 import com.dragon.stepbystep.domain.enums.GenderType;
 import com.dragon.stepbystep.domain.enums.UserStatus;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
@@ -24,24 +26,17 @@ public class User extends BaseTimeEntity {
     @Column(name = "password_hash", nullable = false, length = 60)
     private String passwordHash;
 
-    @Column(name = "temp_password_hash", length = 60)
-    private String tempPasswordHash;
-
-    @Column(name = "temp_password_expires_at")
-    private Instant tempPasswordExpiresAt;
-
-    @Column(name = "must_change_password", nullable = false)
-    @Builder.Default
-    private boolean mustChangePassword = false;
-
     @Column(name = "nickname", nullable = false, length = 50, unique = true)
-    private String nickname; // 3~10자 한/영/숫자 (서비스/DTO 검증)
+    @Pattern(regexp = "^[가-힣a-zA-Z0-9]{3,10}$",
+            message = "닉네임은 3~10자의 한글, 영문, 숫자만 가능합니다.")
+    private String nickname;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false, columnDefinition = "ENUM('F','M')")
+    @Column(name = "gender", nullable = false)
     private GenderType gender;
 
-    @Column(name = "birthyear", nullable = false, columnDefinition = "SMALLINT UNSIGNED")
+    @Column(name = "birthyear", nullable = false)
+    @Min(1900)
     private Integer birthyear; // 1900~현재년 (DB는 2100 체크, 서비스에서 범위 보강)
 
     @Enumerated(EnumType.STRING)
@@ -49,25 +44,35 @@ public class User extends BaseTimeEntity {
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
+    // 임시 비밀번호 관련 필드
+    @Column(name = "temp_password_hash")
+    private String tempPasswordHash;
 
-    // 도메인 규칙 메서드
-    public void softDelete() { this.status = UserStatus.DELETED; }
+    @Column(name = "temp_password_expires_at")
+    private LocalDateTime tempPasswordExpiresAt;
 
-    public void changePassword(String newPasswordHash) {
-        this.passwordHash = newPasswordHash;
-        // 임시 비번 상태 해제
-        this.tempPasswordHash = null;
-        this.tempPasswordExpiresAt = null;
-        this.mustChangePassword = false;
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword;
+
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion=0;
+
+    private LocalDateTime tempPasswordIssuedAt;
+
+
+    public void patch(User dto){
+
+        // 닉네임, 성별, 출생년도 수정
+        if(dto.getNickname() != null && !dto.getNickname().isBlank()) this.nickname = dto.getNickname();
+        if(dto.getGender() != null) this.gender = dto.getGender();
+        if(dto.getBirthyear() != null) this.birthyear = dto.getBirthyear();
     }
 
-    public void issueTemporaryPassword(String tempHash, Instant expiresAt) {
-        this.tempPasswordHash = tempHash;
-        this.tempPasswordExpiresAt = expiresAt;
-        this.mustChangePassword = true;
+    public void incrementTokenVersion(){
+        this.tokenVersion++;
     }
 
-    public boolean isTempPasswordValidNow(Instant now) {
-        return this.tempPasswordHash != null && this.tempPasswordExpiresAt != null && now.isBefore(this.tempPasswordExpiresAt);
+    public void markDeleted(){
+        this.status = UserStatus.DELETED;
     }
 }

@@ -13,7 +13,7 @@ public class TokenBlacklistService {
 
     public void blacklistToken(String token) {
         if (!tokenBlacklistRepository.existsByToken(token)) {
-            TokenBlacklist tokenBlacklist = new TokenBlacklist(null, token);
+            TokenBlacklist tokenBlacklist = new TokenBlacklist(null, null, null);
             tokenBlacklistRepository.save(tokenBlacklist);
         }
     }

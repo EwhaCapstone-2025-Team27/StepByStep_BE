@@ -21,6 +21,16 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    // 회원 탈퇴
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<UserResponseDto>> deleteUser(Principal principal) {
+        Long id = Long.valueOf(principal.getName());
+        UserResponseDto response = userService.softDeleteUser(id);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("회원 탈퇴 성공!", response));
+    }
+
     // 내 정보 조회
     @GetMapping
     public ResponseEntity<ApiResponse<UserResponseDto>> getUser(Principal principal) {
@@ -43,12 +53,11 @@ public class UserController {
 
     // 비밀번호 변경
     @PatchMapping("/change-password")
-    public ResponseEntity<ApiResponse> changePassword(Principal principal, @Valid @RequestBody ChangePwRequestDto dto) {
-        Long id = Long.valueOf(principal.getName());
-        userService.changePassword(id, dto);
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(ApiResponse.success("비밀번호 변경 완료!", null));
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            Principal principal,
+            @Valid @RequestBody ChangePwRequestDto dto
+    ) {
+        userService.changePassword(Long.valueOf(principal.getName()), dto);
+        return ResponseEntity.ok(ApiResponse.success("비밀번호 변경 완료", null));
     }
-
 }

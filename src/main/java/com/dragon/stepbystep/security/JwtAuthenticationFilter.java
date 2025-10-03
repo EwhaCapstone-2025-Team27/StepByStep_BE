@@ -63,7 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             String userId = jwtTokenProvider.getUserIdFromToken(token);
-            if (!userService.existsByEmail(userId)) {
+            if (!userService.existsById(Long.valueOf(userId))) {
                 throw new UserNotFoundException();
             }
 
@@ -79,12 +79,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             response.setStatus(401);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
-            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage()));
+            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage(), null, 401));
         } catch (UserNotFoundException e) {
             response.setStatus(403);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
-            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage()));
+            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage(), null, 403));
         }
     }
 

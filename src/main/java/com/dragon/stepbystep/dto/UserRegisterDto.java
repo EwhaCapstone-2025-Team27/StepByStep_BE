@@ -13,21 +13,26 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UserRegisterDto {
 
+    private Long id;
+
     private String email;
+
+    private String nickname;
 
     private String password;
 
-    private String nickname;
+    private String passwordConfirm;
 
     private GenderType gender;
 
     private Integer birthyear;
 
-    public User toEntity(String encodedPassword){
+    public User toEntity(String encodedPassword) {
         User user = new User();
+        user.setId(this.id);
         user.setEmail(this.email);
-        user.setPassword(encodedPassword);
         user.setNickname(this.nickname);
+        user.setPasswordHash(encodedPassword);
         user.setGender(this.gender);
         user.setBirthyear(this.birthyear);
         return user;

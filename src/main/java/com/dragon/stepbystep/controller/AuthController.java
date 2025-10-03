@@ -1,21 +1,17 @@
 package com.dragon.stepbystep.controller;
 
 import com.dragon.stepbystep.common.ApiResponse;
-import com.dragon.stepbystep.dto.LoginRequestDto;
-import com.dragon.stepbystep.dto.TokenDto;
-import com.dragon.stepbystep.dto.UserRegisterDto;
-import com.dragon.stepbystep.dto.UserResponseDto;
+import com.dragon.stepbystep.dto.*;
 import com.dragon.stepbystep.exception.JwtAuthenticationException;
 import com.dragon.stepbystep.security.JwtTokenProvider;
+import com.dragon.stepbystep.service.PasswordResetService;
 import com.dragon.stepbystep.service.TokenBlacklistService;
 import com.dragon.stepbystep.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.security.Principal;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -30,6 +26,7 @@ public class AuthController {
     @Autowired
     private TokenBlacklistService tokenBlacklistService;
 
+    // 회원가입
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserResponseDto>> registerUser(@RequestBody UserRegisterDto dto) {
         UserResponseDto response = userService.registerUser(dto);
@@ -39,6 +36,7 @@ public class AuthController {
                 );
     }
 
+    // 로그인
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenDto>> login(@RequestBody LoginRequestDto dto) {
         TokenDto response = userService.login(dto);
@@ -47,6 +45,7 @@ public class AuthController {
                 .body(ApiResponse.success("로그인 성공!", response));
     }
 
+    // 로그아웃
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse> logout(@RequestBody TokenDto dto) {
         String accessToken = dto.getAccessToken();
@@ -61,16 +60,22 @@ public class AuthController {
                 .body(ApiResponse.success("로그아웃 성공!", null));
     }
 
-    @DeleteMapping("/delete-account")
-    public ResponseEntity<ApiResponse> deleteUser(Principal principal) {
-        String userEmail = String.valueOf(principal.getName());
-        userService.deleteUser(userEmail);
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(ApiResponse.success("사용자 탈퇴 성공!", null));
+    // 이메일 찾기
+    @PostMapping("find-email")
+    public ResponseEntity<ApiResponse<FindEmailResponseDto>> findEmail(@Valid FindEmailRequestDto dto){
+        return ResponseEntity.ok(ApiResponse.success("이메일 찾기 성공!", userService.findEmail(dto)));
     }
 
+    // 비밀번호 찾기
+    @PostMapping("/find-password")
+    public ResponseEntity<ApiResponse<Void>> findPassword(@RequestBody FindPasswordRequestDto dto) {
+        userService.issueTemporaryPassword(dto.getEmail());
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("임시 비밀번호를 이메일로 전송했습니다.", null));
+    }
+
+    // 토큰 재발급
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<TokenDto>> refreshAccessToken(@RequestBody TokenDto dto) {
         String refreshToken = dto.getRefreshToken();
@@ -81,7 +86,7 @@ public class AuthController {
 
         String accessToken = jwtTokenProvider.refreshAccessToken(refreshToken);
 
-        TokenDto response = new TokenDto(accessToken, null);
+        TokenDto response = new TokenDto(accessToken, null, false);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success("토큰 갱신 성공!", response));

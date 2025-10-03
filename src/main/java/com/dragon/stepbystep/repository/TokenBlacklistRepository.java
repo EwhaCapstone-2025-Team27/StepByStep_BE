@@ -9,7 +9,5 @@ import java.util.Optional;
 
 @Repository
 public interface TokenBlacklistRepository extends JpaRepository<TokenBlacklist, Long> {
-    Optional<TokenBlacklist> findByTokenHash(String tokenHash);
-    boolean existsByTokenHash(String tokenHash);
-    void deleteByExpiresAtBefore(Instant now);
+    boolean existsByToken(String token);
 }
