@@ -39,6 +39,7 @@ public class BoardService {
 
         Board newPost = Board.builder()
                 .author(author)
+                .authorNickname(author.getNickname())
                 .content(content)
                 .build();
 

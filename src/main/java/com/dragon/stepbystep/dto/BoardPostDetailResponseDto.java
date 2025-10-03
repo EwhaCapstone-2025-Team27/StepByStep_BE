@@ -26,12 +26,20 @@ public class BoardPostDetailResponseDto {
 
         return BoardPostDetailResponseDto.builder()
                 .id(board.getId())
-                .nickname(board.getAuthor().getNickname())
+                .nickname(resolveNickname(board))
                 .createdAt(displayTime)
                 .content(board.getContent())
                 .commentsNum(commentsNum)
                 .likesNum(board.getLikesCount())
                 .data(safeComments)
                 .build();
+    }
+
+    private static String resolveNickname(Board board) {
+        String storedNickname = board.getAuthorNickname();
+        if (storedNickname != null && !storedNickname.isEmpty()) {
+            return storedNickname;
+        }
+        return board.getAuthor() != null ? board.getAuthor().getNickname() : null;
     }
 }

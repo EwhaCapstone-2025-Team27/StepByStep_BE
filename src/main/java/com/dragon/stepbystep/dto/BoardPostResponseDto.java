@@ -22,4 +22,12 @@ public class BoardPostResponseDto {
                 .content(board.getContent())
                 .build();
     }
+
+    private static String resolveNickname(Board board) {
+        String storedNickname = board.getAuthorNickname();
+        if (storedNickname != null && !storedNickname.isBlank()) {
+            return storedNickname;
+        }
+        return board.getAuthor() != null ? board.getAuthor().getNickname() : null;
+    }
 }

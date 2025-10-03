@@ -20,6 +20,9 @@ public class Board extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User author;
 
+    @Column(name = "author_nickname", nullable = false)
+    private String authorNickname;
+
     @Lob
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;

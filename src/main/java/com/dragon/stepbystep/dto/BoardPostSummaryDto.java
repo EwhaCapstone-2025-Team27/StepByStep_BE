@@ -19,11 +19,19 @@ public class BoardPostSummaryDto {
     public static BoardPostSummaryDto from(Board board) {
         return BoardPostSummaryDto.builder()
                 .postId(board.getId())
-                .nickname(board.getAuthor().getNickname())
+                .nickname(resolveNickname(board))
                 .createdAt(board.getCreatedAt() != null ? board.getUpdatedAt() : board.getCreatedAt())
                 .content(board.getContent())
                 .commentsNum(board.getCommentsCount())
                 .likesNum(board.getLikesCount())
                 .build();
+    }
+
+    private static String resolveNickname(Board board) {
+        String storedNickname = board.getAuthorNickname();
+        if (storedNickname != null && !storedNickname.isBlank()) {
+            return storedNickname;
+        }
+        return board.getAuthor() != null ? board.getAuthor().getNickname() : null;
     }
 }
