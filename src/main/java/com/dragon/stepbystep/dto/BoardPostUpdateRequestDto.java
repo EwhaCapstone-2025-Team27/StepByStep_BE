@@ -6,12 +6,12 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class BoardPostCreateRequestDto {
+public class BoardPostUpdateRequestDto {
 
-    @NotBlank(message = "내용을 입력해주세요.")
+    @NotBlank(message = "게시글 내용은 필수입니다.")
     private String content;
 
-    public BoardPostCreateRequestDto(String content) {
+    public BoardPostUpdateRequestDto(String content) {
         this.content = content;
     }
 }

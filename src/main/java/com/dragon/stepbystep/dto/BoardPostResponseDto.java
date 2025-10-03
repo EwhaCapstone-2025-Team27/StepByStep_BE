@@ -18,7 +18,7 @@ public class BoardPostResponseDto {
         return BoardPostResponseDto.builder()
                 .id(board.getId())
                 .nickname(board.getAuthor().getNickname())
-                .createdAt(board.getCreatedAt())
+                .createdAt(board.getCreatedAt() != null ? board.getUpdatedAt() : board.getCreatedAt())
                 .content(board.getContent())
                 .build();
     }

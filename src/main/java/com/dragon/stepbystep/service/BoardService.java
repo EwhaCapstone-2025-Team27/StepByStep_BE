@@ -3,9 +3,8 @@ package com.dragon.stepbystep.service;
 import com.dragon.stepbystep.domain.Board;
 import com.dragon.stepbystep.domain.User;
 import com.dragon.stepbystep.domain.enums.BoardSearchType;
-import com.dragon.stepbystep.dto.BoardPostListResponseDto;
-import com.dragon.stepbystep.dto.BoardPostResponseDto;
-import com.dragon.stepbystep.dto.BoardPostSummaryDto;
+import com.dragon.stepbystep.dto.*;
+import com.dragon.stepbystep.exception.BoardNotFoundException;
 import com.dragon.stepbystep.exception.UserNotFoundException;
 import com.dragon.stepbystep.repository.BoardRepository;
 import com.dragon.stepbystep.repository.UserRepository;
@@ -14,6 +13,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.file.AccessDeniedException;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +31,7 @@ public class BoardService {
             throw new IllegalArgumentException("작성자 정보가 필요합니다.");
         }
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("게시글 내용은 필수입니다.");
+            throw new IllegalArgumentException("내용을 입력해주세요.");
         }
 
         User author = userRepository.findById(authorId)
@@ -40,6 +43,7 @@ public class BoardService {
                 .build();
 
         Board savedPost = boardRepository.save(newPost);
+        boardRepository.flush();
         return BoardPostResponseDto.from(savedPost);
     }
 
@@ -57,6 +61,47 @@ public class BoardService {
                 .totalPages(dtoPage.getTotalPages())
                 .last(dtoPage.isLast())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public BoardPostDetailResponseDto getPost(Long postId) {
+        Board board = boardRepository.findById(postId)
+                .orElseThrow(() -> new BoardNotFoundException(postId));
+
+        List<BoardCommentResponseDto> comments = Collections.emptyList();
+
+        return BoardPostDetailResponseDto.from(board, comments);
+    }
+
+    @Transactional
+    public BoardPostResponseDto updatePost(Long postId, Long authorId, String content) throws AccessDeniedException {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("게시글 내용은 필수입니다.");
+        }
+
+        Board board = boardRepository.findById(postId)
+                .orElseThrow(() -> new BoardNotFoundException(postId));
+
+        if (!board.isAuthor(authorId)) {
+            throw new AccessDeniedException("본인이 작성한 게시글만 수정할 수 있습니다.");
+        }
+
+        board.updateContent(content);
+        boardRepository.flush();
+
+        return BoardPostResponseDto.from(board);
+    }
+
+    @Transactional
+    public void deletePost(Long postId, Long authorId) throws AccessDeniedException {
+        Board board = boardRepository.findById(postId)
+                .orElseThrow(() -> new BoardNotFoundException(postId));
+
+        if (!board.isAuthor(authorId)) {
+            throw new AccessDeniedException("본인이 작성한 게시글만 삭제할 수 있습니다.");
+        }
+
+        boardRepository.delete(board);
     }
 
     private Page<Board> searchBoards(String keyword, BoardSearchType searchType, Pageable pageable) {

@@ -31,4 +31,13 @@ public class Board extends BaseTimeEntity {
     @Builder.Default
     @Column(name = "likes_count", nullable = false)
     private int likesCount = 0;
+
+
+    public boolean isAuthor(Long userId){
+        return author != null && author.getId().equals(userId);
+    }
+
+    public void updateContent(String content){
+        this.content = content;
+    }
 }

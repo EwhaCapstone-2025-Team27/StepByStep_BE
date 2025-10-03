@@ -2,24 +2,18 @@ package com.dragon.stepbystep.controller;
 
 import com.dragon.stepbystep.common.ApiResponse;
 import com.dragon.stepbystep.domain.enums.BoardSearchType;
-import com.dragon.stepbystep.dto.BoardPostCreateRequestDto;
-import com.dragon.stepbystep.dto.BoardPostListResponseDto;
-import com.dragon.stepbystep.dto.BoardPostResponseDto;
+import com.dragon.stepbystep.dto.*;
 import com.dragon.stepbystep.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
+import java.nio.file.AccessDeniedException;
 import java.security.Principal;
 
 @RestController
@@ -29,6 +23,7 @@ public class BoardController {
 
     private final BoardService boardService;
 
+    // 게시글 작성
     @PostMapping("/posts")
     public ResponseEntity<ApiResponse<BoardPostResponseDto>> createPost(
             Principal principal,
@@ -39,6 +34,7 @@ public class BoardController {
         return ResponseEntity.ok(ApiResponse.success("게시글 작성 성공!", response));
     }
 
+    // 게시글 전체 조회
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<BoardPostListResponseDto>> getPosts(
             @RequestParam(value = "keyword", required = false) String keyword,
@@ -51,5 +47,35 @@ public class BoardController {
         BoardPostListResponseDto response = boardService.getPosts(keyword, searchType, pageable);
 
         return ResponseEntity.ok(ApiResponse.success("게시글 목록 조회 성공!", response));
+    }
+
+    // 특정 게시글 조회
+    @GetMapping("/posts/{postId}")
+    public ResponseEntity<ApiResponse<BoardPostDetailResponseDto>> getPost(@PathVariable Long postId){
+        BoardPostDetailResponseDto response = boardService.getPost(postId);
+        return ResponseEntity.ok(ApiResponse.success("특정 게시글 조회 성공!", response));
+    }
+
+    // 게시글 수정
+    @PatchMapping("/posts/{postId}")
+    public ResponseEntity<ApiResponse<BoardPostResponseDto>> updatePost(
+            Principal principal,
+            @PathVariable Long postId,
+            @Valid @RequestBody BoardPostUpdateRequestDto request
+    ) throws AccessDeniedException {
+        Long userId = Long.valueOf(principal.getName());
+        BoardPostResponseDto response = boardService.updatePost(postId, userId, request.getContent());
+        return ResponseEntity.ok(ApiResponse.success("게시글 수정 성공!", response));
+    }
+
+    // 게시글 삭제
+    @DeleteMapping("/posts/{postId}")
+    public ResponseEntity<ApiResponse<Void>> deletePost(
+            Principal principal,
+            @PathVariable Long postId
+    ) throws AccessDeniedException {
+        Long userId = Long.valueOf(principal.getName());
+        boardService.deletePost(postId, userId);
+        return ResponseEntity.ok(ApiResponse.success("게시글 삭제 성공!", null));
     }
 }
