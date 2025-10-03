@@ -8,7 +8,6 @@ import com.dragon.stepbystep.repository.UserRepository;
 import com.dragon.stepbystep.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -41,18 +40,33 @@ public class UserService {
     }
 
     // 회원가입
-    // 사용자 등록
     public UserResponseDto registerUser(UserRegisterDto dto) {
-
-        if (dto.getEmail() == null || dto.getPassword() == null || dto.getNickname() == null || dto.getGender() == null || dto.getBirthyear() == null) {
+        if (dto == null) {
             throw new IllegalArgumentException("필수 값이 누락되었습니다.");
+        }
+
+        if (dto.getEmail() == null || dto.getEmail().isBlank()
+                || dto.getPassword() == null || dto.getPassword().isBlank()
+                || dto.getPasswordConfirm() == null || dto.getPasswordConfirm().isBlank()
+                || dto.getNickname() == null || dto.getNickname().isBlank()
+                || dto.getGender() == null
+                || dto.getBirthyear() == null) {
+            throw new IllegalArgumentException("필수 값이 누락되었습니다.");
+        }
+
+        if (!dto.getPassword().equals(dto.getPasswordConfirm())) {
+            throw new IllegalArgumentException("비밀번호 확인이 일치하지 않습니다.");
         }
 
         if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
 
+        String encodedPassword = passwordEncoder.encode(dto.getPassword());
+        User user = dto.toEntity(encodedPassword);
+        User savedUser = userRepository.save(user);
 
+        return UserResponseDto.fromEntity(savedUser);
     }
 
     // 사용자 정보 조회
@@ -113,11 +127,11 @@ public class UserService {
 
     @Transactional
     public void issueTemporaryPassword(String email) {
-        if (isBlank(email)) {
+        if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("이메일은 필수 값입니다.");
         }
 
-        User user = userRepository.findById(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(UserNotFoundException::new);
 
         if (user.getStatus() == UserStatus.DELETED) {
@@ -126,9 +140,14 @@ public class UserService {
 
         String temporaryPassword = generateTemporaryPassword();
 
-        user.setPassword(passwordEncoder.encode(temporaryPassword));
+        LocalDateTime issuedAt = LocalDateTime.now();
+        user.setTempPasswordHash(passwordEncoder.encode(temporaryPassword));
+        user.setTempPasswordExpiresAt(issuedAt.plusMinutes(tempPasswordExpirationMinutes));
+        user.setMustChangePassword(true);
+        user.setTempPasswordIssuedAt(issuedAt);
         user.setStatus(UserStatus.RESET_REQUIRED);
-        user.setTempPasswordIssuedAt(LocalDateTime.now());
+
+        userRepository.save(user);
 
         mailService.sendTemporaryPasswordEmail(email, temporaryPassword, tempPasswordExpirationMinutes);
     }

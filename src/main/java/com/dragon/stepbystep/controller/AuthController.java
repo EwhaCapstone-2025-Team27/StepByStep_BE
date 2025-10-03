@@ -26,6 +26,9 @@ public class AuthController {
     @Autowired
     private TokenBlacklistService tokenBlacklistService;
 
+    @Autowired
+    private PasswordResetService passwordResetService;
+
     // 회원가입
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserResponseDto>> registerUser(@RequestBody UserRegisterDto dto) {
@@ -62,14 +65,14 @@ public class AuthController {
 
     // 이메일 찾기
     @PostMapping("find-email")
-    public ResponseEntity<ApiResponse<FindEmailResponseDto>> findEmail(@Valid FindEmailRequestDto dto){
+    public ResponseEntity<ApiResponse<FindEmailResponseDto>> findEmail(@Valid @RequestBody FindEmailRequestDto dto) {
         return ResponseEntity.ok(ApiResponse.success("이메일 찾기 성공!", userService.findEmail(dto)));
     }
 
     // 비밀번호 찾기
     @PostMapping("/find-password")
     public ResponseEntity<ApiResponse<Void>> findPassword(@RequestBody FindPasswordRequestDto dto) {
-        userService.issueTemporaryPassword(dto.getEmail());
+        passwordResetService.issueTemporaryPassword(dto);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success("임시 비밀번호를 이메일로 전송했습니다.", null));

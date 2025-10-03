@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -24,7 +25,7 @@ class UserApiIntegrationTest {
         // 1) 회원가입
         var register = """
         {
-          "loginId":"abcd1234",
+          "email":"test@example.com",
           "password":"Pa55word!",
           "nickname":"테스터",
           "gender":"F",
@@ -34,12 +35,14 @@ class UserApiIntegrationTest {
         mvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(register))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.email").value("test@example.com"))
+                .andExpect(jsonPath("$.data.nickname").value("테스터"));
 
         // 2) 로그인
         var login = """
         {
-          "loginId":"abcd1234",
+          "email":"test@example.com",
           "password":"Pa55word!"
         }
         """;
@@ -58,7 +61,45 @@ class UserApiIntegrationTest {
         mvc.perform(get("/api/users/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.loginId").value("abcd1234"))
+                .andExpect(jsonPath("$.data.email").value("test@example.com"))
                 .andExpect(jsonPath("$.data.nickname").value("테스터"));
+    }
+
+    @Test
+    void register_delete_flow() throws Exception {
+        var register = """
+        {
+          "loginId":"deleteuser1",
+          "password":"Pa55word!",
+          "nickname":"삭제테스터",
+          "gender":"M",
+          "birthyear":1995
+        }
+        """;
+        mvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(register))
+                .andExpect(status().isOk());
+
+        var login = """
+        {
+          "loginId":"deleteuser1",
+          "password":"Pa55word!"
+        }
+        """;
+        var loginResult = mvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(login))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var body = loginResult.getResponse().getContentAsString();
+        var token = body.replaceAll(".*\\"accessToken\\"\\s*:\\s*\\"([^\\"]+)\\".*", "$1");
+
+        mvc.perform(delete("/api/users/me")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("회원 탈퇴 성공!"))
+                .andExpect(jsonPath("$.data").value(nullValue()));
     }
 }

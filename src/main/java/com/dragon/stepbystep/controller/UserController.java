@@ -23,12 +23,12 @@ public class UserController {
 
     // 회원 탈퇴
     @DeleteMapping
-    public ResponseEntity<ApiResponse<UserResponseDto>> deleteUser(Principal principal) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(Principal principal) {
         Long id = Long.valueOf(principal.getName());
-        UserResponseDto response = userService.softDeleteUser(id);
+        userService.deleteUser(id);
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.success("회원 탈퇴 성공!", response));
+                .body(ApiResponse.success("회원 탈퇴 성공!", null));
     }
 
     // 내 정보 조회
