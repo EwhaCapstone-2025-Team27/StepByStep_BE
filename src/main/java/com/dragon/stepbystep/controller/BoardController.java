@@ -78,4 +78,23 @@ public class BoardController {
         boardService.deletePost(postId, userId);
         return ResponseEntity.ok(ApiResponse.success("게시글 삭제 성공!", null));
     }
+
+    // 게시글 좋아요
+    @PostMapping("/posts/{postId}/like")
+    public ResponseEntity<ApiResponse<BoardLikeResponseDto>> likePost(Principal principal, @PathVariable Long postId, @RequestBody(required = false) BoardLikeRequestDto request) {
+        Long userId = Long.valueOf(principal.getName());
+        BoardLikeResponseDto response = boardService.likePost(postId, userId);
+        return ResponseEntity.ok(ApiResponse.success("게시글 좋아요 성공!", response));
+    }
+
+    // 게시글 좋아요 취소
+    @DeleteMapping("/posts/{postId}/like")
+    public ResponseEntity<ApiResponse<BoardLikeResponseDto>> unlikePost(
+            Principal principal,
+            @PathVariable Long postId
+    ) {
+        Long userId = Long.valueOf(principal.getName());
+        BoardLikeResponseDto response = boardService.unlikePost(postId, userId);
+        return ResponseEntity.ok(ApiResponse.success("게시글 좋아요 취소 성공!", response));
+    }
 }

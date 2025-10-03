@@ -1,11 +1,13 @@
 package com.dragon.stepbystep.service;
 
 import com.dragon.stepbystep.domain.Board;
+import com.dragon.stepbystep.domain.BoardLike;
 import com.dragon.stepbystep.domain.User;
 import com.dragon.stepbystep.domain.enums.BoardSearchType;
 import com.dragon.stepbystep.dto.*;
 import com.dragon.stepbystep.exception.BoardNotFoundException;
 import com.dragon.stepbystep.exception.UserNotFoundException;
+import com.dragon.stepbystep.repository.BoardLikeRepository;
 import com.dragon.stepbystep.repository.BoardRepository;
 import com.dragon.stepbystep.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
+    private final BoardLikeRepository boardLikeRepository;
 
     @Transactional
     public BoardPostResponseDto createPost(Long authorId, String content) {
@@ -103,6 +106,49 @@ public class BoardService {
         }
 
         boardRepository.delete(board);
+    }
+
+    @Transactional
+    public BoardLikeResponseDto likePost(Long postId, Long userId) {
+        Board board = boardRepository.findById(postId)
+                .orElseThrow(() -> new BoardNotFoundException(postId));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (!boardLikeRepository.existsByBoard_IdAndUser_Id(postId, userId)) {
+            BoardLike boardLike = BoardLike.builder()
+                    .board(board)
+                    .user(user)
+                    .build();
+            boardLikeRepository.save(boardLike);
+            board.increaseLikesCount();
+        }
+
+        return BoardLikeResponseDto.builder()
+                .liked(true)
+                .likeNum(board.getLikesCount())
+                .build();
+    }
+
+    @Transactional
+    public BoardLikeResponseDto unlikePost(Long postId, Long userId) {
+        Board board = boardRepository.findById(postId)
+                .orElseThrow(() -> new BoardNotFoundException(postId));
+
+        userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        boardLikeRepository.findByBoard_IdAndUser_Id(postId, userId)
+                .ifPresent(boardLike -> {
+                    boardLikeRepository.delete(boardLike);
+                    board.decreaseLikesCount();
+                });
+
+        return BoardLikeResponseDto.builder()
+                .liked(false)
+                .likeNum(board.getLikesCount())
+                .build();
     }
 
     private Page<Board> searchBoards(String keyword, BoardSearchType searchType, Pageable pageable) {

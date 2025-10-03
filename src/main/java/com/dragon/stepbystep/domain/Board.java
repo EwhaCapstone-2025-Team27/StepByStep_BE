@@ -43,4 +43,14 @@ public class Board extends BaseTimeEntity {
     public void updateContent(String content){
         this.content = content;
     }
+
+    public void increaseLikesCount(){
+        this.likesCount += 1;
+    }
+
+    public void decreaseLikesCount(){
+        if(this.likesCount > 0){
+            this.likesCount -= 1;
+        }
+    }
 }
