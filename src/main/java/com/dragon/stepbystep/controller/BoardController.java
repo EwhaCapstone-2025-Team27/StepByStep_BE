@@ -97,4 +97,41 @@ public class BoardController {
         BoardLikeResponseDto response = boardService.unlikePost(postId, userId);
         return ResponseEntity.ok(ApiResponse.success("게시글 좋아요 취소 성공!", response));
     }
+
+    // 댓글 작성
+    @PostMapping("/posts/{postId}/comments")
+    public ResponseEntity<ApiResponse<BoardCommentResponseDto>> createComment(
+            Principal principal,
+            @PathVariable Long postId,
+            @Valid @RequestBody BoardCommentRequestDto request
+    ) {
+        Long userId = Long.valueOf(principal.getName());
+        BoardCommentResponseDto response = boardService.createComment(postId, userId, request.getContent());
+        return ResponseEntity.ok(ApiResponse.success("댓글 작성 성공!", response));
+    }
+
+    // 댓글 수정
+    @PatchMapping("/posts/{postId}/comments/{commentId}")
+    public ResponseEntity<ApiResponse<BoardCommentResponseDto>> updateComment(
+            Principal principal,
+            @PathVariable Long postId,
+            @PathVariable Long commentId,
+            @Valid @RequestBody BoardCommentRequestDto request
+    ) throws AccessDeniedException {
+        Long userId = Long.valueOf(principal.getName());
+        BoardCommentResponseDto response = boardService.updateComment(postId, commentId, userId, request.getContent());
+        return ResponseEntity.ok(ApiResponse.success("댓글 수정 성공!", response));
+    }
+
+    // 댓글 삭제
+    @DeleteMapping("/posts/{postId}/comments/{commentId}")
+    public ResponseEntity<ApiResponse<Void>> deleteComment(
+            Principal principal,
+            @PathVariable Long postId,
+            @PathVariable Long commentId
+    ) throws AccessDeniedException {
+        Long userId = Long.valueOf(principal.getName());
+        boardService.deleteComment(postId, commentId, userId);
+        return ResponseEntity.ok(ApiResponse.success("댓글 삭제 성공!", null));
+    }
 }

@@ -53,4 +53,14 @@ public class Board extends BaseTimeEntity {
             this.likesCount -= 1;
         }
     }
+
+    public void increaseCommentsCount() {
+        this.commentsCount += 1;
+    }
+
+    public void decreaseCommentsCount() {
+        if (this.commentsCount > 0) {
+            this.commentsCount -= 1;
+        }
+    }
 }

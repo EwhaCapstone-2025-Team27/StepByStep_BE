@@ -1,12 +1,15 @@
 package com.dragon.stepbystep.service;
 
 import com.dragon.stepbystep.domain.Board;
+import com.dragon.stepbystep.domain.BoardComment;
 import com.dragon.stepbystep.domain.BoardLike;
 import com.dragon.stepbystep.domain.User;
 import com.dragon.stepbystep.domain.enums.BoardSearchType;
 import com.dragon.stepbystep.dto.*;
+import com.dragon.stepbystep.exception.BoardCommentNotFoundException;
 import com.dragon.stepbystep.exception.BoardNotFoundException;
 import com.dragon.stepbystep.exception.UserNotFoundException;
+import com.dragon.stepbystep.repository.BoardCommentRepository;
 import com.dragon.stepbystep.repository.BoardLikeRepository;
 import com.dragon.stepbystep.repository.BoardRepository;
 import com.dragon.stepbystep.repository.UserRepository;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.AccessDeniedException;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +31,9 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final BoardLikeRepository boardLikeRepository;
+    private final BoardCommentRepository boardCommentRepository;
 
+    // 게시글 작성
     @Transactional
     public BoardPostResponseDto createPost(Long authorId, String content) {
         if (authorId == null) {
@@ -51,6 +57,7 @@ public class BoardService {
         return BoardPostResponseDto.from(savedPost);
     }
 
+    // 특정 게시글 보기
     @Transactional(readOnly = true)
     public BoardPostListResponseDto getPosts(String keyword, BoardSearchType searchType, Pageable pageable) {
         Page<Board> boards = searchBoards(keyword, searchType, pageable);
@@ -72,15 +79,88 @@ public class BoardService {
         Board board = boardRepository.findById(postId)
                 .orElseThrow(() -> new BoardNotFoundException(postId));
 
-        List<BoardCommentResponseDto> comments = Collections.emptyList();
+        List<BoardCommentResponseDto> comments = boardCommentRepository.findByBoard_IdOrderByCreatedAtAsc(postId)
+                .stream()
+                .map(BoardCommentResponseDto::from)
+                .collect(Collectors.toList());
 
         return BoardPostDetailResponseDto.from(board, comments);
     }
 
+    // 댓글 작성
+    @Transactional
+    public BoardCommentResponseDto createComment(Long postId, Long userId, String content) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("댓글 내용을 입력해주세요.");
+        }
+
+        Board board = boardRepository.findById(postId)
+                .orElseThrow(() -> new BoardNotFoundException(postId));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        BoardComment comment = BoardComment.builder()
+                .board(board)
+                .author(user)
+                .authorNickname(user.getNickname())
+                .content(content)
+                .build();
+
+        BoardComment savedComment = boardCommentRepository.save(comment);
+        boardCommentRepository.flush();
+        board.increaseCommentsCount();
+
+        return BoardCommentResponseDto.from(savedComment);
+    }
+
+    // 댓글 수정
+    @Transactional
+    public BoardCommentResponseDto updateComment(Long postId, Long commentId, Long userId, String content) throws AccessDeniedException {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("댓글 내용을 입력해주세요.");
+        }
+
+        BoardComment comment = boardCommentRepository.findById(commentId)
+                .orElseThrow(() -> new BoardCommentNotFoundException(commentId));
+
+        if (!comment.getBoard().getId().equals(postId)) {
+            throw new IllegalArgumentException("해당 게시글의 댓글이 아닙니다.");
+        }
+
+        if (!comment.isAuthor(userId)) {
+            throw new AccessDeniedException("본인이 작성한 댓글만 수정할 수 있습니다.");
+        }
+
+        comment.updateContent(content);
+        boardCommentRepository.flush();
+
+        return BoardCommentResponseDto.from(comment);
+    }
+
+    // 댓글 삭제
+    @Transactional
+    public void deleteComment(Long postId, Long commentId, Long userId) throws AccessDeniedException {
+        BoardComment comment = boardCommentRepository.findById(commentId)
+                .orElseThrow(() -> new BoardCommentNotFoundException(commentId));
+
+        if (!comment.getBoard().getId().equals(postId)) {
+            throw new IllegalArgumentException("해당 게시글의 댓글이 아닙니다.");
+        }
+
+        if (!comment.isAuthor(userId)) {
+            throw new AccessDeniedException("본인이 작성한 댓글만 삭제할 수 있습니다.");
+        }
+
+        comment.getBoard().decreaseCommentsCount();
+        boardCommentRepository.delete(comment);
+    }
+
+    // 게시글 수정
     @Transactional
     public BoardPostResponseDto updatePost(Long postId, Long authorId, String content) throws AccessDeniedException {
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("게시글 내용은 필수입니다.");
+            throw new IllegalArgumentException("내용을 수정해주세요.");
         }
 
         Board board = boardRepository.findById(postId)
@@ -96,6 +176,7 @@ public class BoardService {
         return BoardPostResponseDto.from(board);
     }
 
+    // 게시글 삭제
     @Transactional
     public void deletePost(Long postId, Long authorId) throws AccessDeniedException {
         Board board = boardRepository.findById(postId)
@@ -108,6 +189,7 @@ public class BoardService {
         boardRepository.delete(board);
     }
 
+    // 게시글 좋아요
     @Transactional
     public BoardLikeResponseDto likePost(Long postId, Long userId) {
         Board board = boardRepository.findById(postId)
@@ -131,6 +213,7 @@ public class BoardService {
                 .build();
     }
 
+    // 게시글 좋아요 취소
     @Transactional
     public BoardLikeResponseDto unlikePost(Long postId, Long userId) {
         Board board = boardRepository.findById(postId)
@@ -151,6 +234,7 @@ public class BoardService {
                 .build();
     }
 
+    // 게시글 목록
     private Page<Board> searchBoards(String keyword, BoardSearchType searchType, Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
             return boardRepository.findAll(pageable);
