@@ -7,8 +7,8 @@ import lombok.Setter;
 @Getter @Setter
 public class ChangePw {
 
-    @NotEmpty(message = "기존 비밀번호는 필수항목입니다.")
-    private String originPassword;
+
+    private String currentPassword;
 
     @NotEmpty(message = "새 비밀번호는 필수항목입니다.")
     private String newPassword;

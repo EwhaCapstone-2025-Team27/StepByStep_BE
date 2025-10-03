@@ -43,9 +43,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenDto>> login(@RequestBody LoginRequestDto dto) {
         TokenDto response = userService.login(dto);
+
+        String message = response.isForcePasswordChange()
+                ? "임시 비밀번호로 로그인했습니다. 내 정보 수정 페이지에서 비밀번호를 변경해주세요."
+                : "로그인 성공!";
+
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.success("로그인 성공!", response));
+                .body(ApiResponse.success(message, response));
     }
 
     // 로그아웃

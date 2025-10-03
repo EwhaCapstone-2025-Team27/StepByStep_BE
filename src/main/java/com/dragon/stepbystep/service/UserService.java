@@ -84,14 +84,18 @@ public class UserService {
     // 사용자 정보 수정(닉네임, 성별, 출생년도)
     @Transactional
     public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
-        User user = dto.toEntity();
-        System.out.println(user.toString());
+        User target = userRepository.findById(id)
+                .orElseThrow(UserNotFoundException::new);
 
-        User target = userRepository.findById(id).orElse(null);
-        if (target == null || id != user.getId()) {
-            throw new UserNotFoundException();
+        if (dto.getNickname() != null && !dto.getNickname().isBlank()) {
+            target.setNickname(dto.getNickname());
         }
-        target.patch(user);
+        if (dto.getGender() != null) {
+            target.setGender(dto.getGender());
+        }
+        if (dto.getBirthyear() > 0) {
+            target.setBirthyear(dto.getBirthyear());
+        }
 
         User updated = userRepository.save(target);
         return UserResponseDto.fromEntity(updated);
@@ -100,29 +104,49 @@ public class UserService {
     // 비밀번호 변경
     @Transactional
     public void changePassword(Long id, ChangePwRequestDto dto) {
-        User user = userRepository.findById(id).orElse(null);
+        User user = userRepository.findById(id)
+                .orElseThrow(UserNotFoundException::new);
 
-        // 현재 비밀번호 확인
-        if(!passwordEncoder.matches(dto.getCurrentPassword(), user.getPasswordHash())){
-            throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
+        boolean allowWithoutCurrentPassword = user.isMustChangePassword() && user.getTempPasswordHash() != null;
+        String currentPassword = dto.getCurrentPassword();
+
+        if (!allowWithoutCurrentPassword) {
+            if (currentPassword == null || currentPassword.isBlank()
+                    || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+                throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
+            }
+        } else if (currentPassword != null && !currentPassword.isBlank()) {
+            boolean matchesPermanent = passwordEncoder.matches(currentPassword, user.getPasswordHash());
+            boolean matchesTemporary = user.getTempPasswordHash() != null
+                    && passwordEncoder.matches(currentPassword, user.getTempPasswordHash());
+            if (!(matchesPermanent || matchesTemporary)) {
+                throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
+            }
         }
 
-        // 새 비밀번호 일치 확인
-        if(!dto.getNewPassword().equals(dto.getNewPasswordConfirm())){
+        if (!dto.getNewPassword().equals(dto.getNewPasswordConfirm())) {
             throw new IllegalArgumentException("새 비밀번호 확인이 일치하지 않습니다.");
         }
 
-        // 기존 비밀번호와 동일 금지
-        if(passwordEncoder.matches(dto.getNewPassword(), user.getPasswordHash())){
+        if (passwordEncoder.matches(dto.getNewPassword(), user.getPasswordHash())) {
             throw new IllegalStateException("기존 비밀번호와 동일합니다.");
         }
 
-        // 새 비밀번호 해시 & 저장
+        if (user.getTempPasswordHash() != null
+                && passwordEncoder.matches(dto.getNewPassword(), user.getTempPasswordHash())) {
+            throw new IllegalStateException("임시 비밀번호와 동일합니다.");
+        }
+
         String newPasswordHash = passwordEncoder.encode(dto.getNewPassword());
         user.setPasswordHash(newPasswordHash);
-
-        // 기존 토큰 무효화
         user.incrementTokenVersion();
+        user.setMustChangePassword(false);
+        user.setTempPasswordHash(null);
+        user.setTempPasswordExpiresAt(null);
+        user.setTempPasswordIssuedAt(null);
+        if (user.getStatus() == UserStatus.RESET_REQUIRED) {
+            user.setStatus(UserStatus.ACTIVE);
+        }
     }
 
     @Transactional
@@ -197,10 +221,6 @@ public class UserService {
         // 임시 비번 로그인 성공 시, 비번 변경 강제 플래그 유지/설정
         if (tempOK) {
             user.setMustChangePassword(true);
-            // 1회성
-            user.setTempPasswordHash(null);
-            user.setTempPasswordExpiresAt(null);
-            userRepository.save(user);
         }
 
         String access = jwtTokenProvider.createAccessToken(user.getId());   // 필요시 claims 오버로드 사용

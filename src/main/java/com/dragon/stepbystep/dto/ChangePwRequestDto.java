@@ -10,7 +10,6 @@ public class ChangePwRequestDto {
     @NotBlank
     private String currentPassword;
 
-    @NotBlank
     @Size(min = 8, max = 20) // 네 정책: 8~20자
     private String newPassword;
 
