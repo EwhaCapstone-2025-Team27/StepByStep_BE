@@ -26,13 +26,13 @@ public class JwtTokenProvider {
     private long refreshTokenValidityInMilliseconds = 604800000;
 
     // access 토큰 생성
-    public String createAccessToken(String userEmail) {
+    public String createAccessToken(Long id) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + accessTokenValidityInMilliseconds);
 
         // JWT 토큰 생성
         return Jwts.builder()
-                .setSubject(String.valueOf(userEmail))
+                .setSubject(String.valueOf(id))
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .signWith(SignatureAlgorithm.HS256, secretKey)
@@ -40,12 +40,12 @@ public class JwtTokenProvider {
     }
 
     // refresh 토큰 생성
-    public String createRefreshToken(String userEmail) {
+    public String createRefreshToken(Long id) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + refreshTokenValidityInMilliseconds);
 
         return Jwts.builder()
-                .setSubject(String.valueOf(userEmail))
+                .setSubject(String.valueOf(id))
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .signWith(SignatureAlgorithm.HS256, secretKey)
@@ -60,7 +60,7 @@ public class JwtTokenProvider {
 
         try {
             String userId = getUserIdFromToken(refreshToken);
-            return createAccessToken(userId);
+            return createAccessToken(Long.valueOf(userId));
         } catch (Exception e) {
             throw new JwtAuthenticationException("유효하지 않은 토큰입니다.");
         }

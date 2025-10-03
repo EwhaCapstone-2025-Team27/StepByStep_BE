@@ -13,12 +13,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -28,7 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final List<String> EXCLUDED_PATHS = List.of(
             "/api/auth/register",
             "/api/auth/login",
-            "/api/auth/refresh"
+            "/api/auth/refresh",
+            "/api/auth/find-email",
+            "/api/auth/find-password"
     );
 
     @Autowired
@@ -63,13 +66,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             String userId = jwtTokenProvider.getUserIdFromToken(token);
-            if (!userService.existsByEmail(userId)) {
+            if (!userService.existsById(Long.valueOf(userId))) {
                 throw new UserNotFoundException();
             }
 
             Authentication authentication = new OAuth2AuthenticationToken(
-                    new OAuth2UserPrincipal(userId, null),
-                    null, "jwt"
+                    new OAuth2UserPrincipal(
+                            userId,
+                            null,
+                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                    ),
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")),
+                    "jwt"
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -79,12 +87,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             response.setStatus(401);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
-            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage()));
+            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage(), null, 401));
         } catch (UserNotFoundException e) {
             response.setStatus(403);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
-            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage()));
+            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage(), null, 403));
         }
     }
 

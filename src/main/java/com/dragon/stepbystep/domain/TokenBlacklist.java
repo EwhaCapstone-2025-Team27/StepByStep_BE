@@ -1,25 +1,30 @@
 package com.dragon.stepbystep.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.Instant;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
+@Table(name = "token_blacklist",
+        indexes = {
+                @Index(name = "idx_token_blacklist_expires", columnList = "expires_at")
+        })
 public class TokenBlacklist {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
-    private String token;
+    @Column(name = "token_hash", nullable = false, length = 128, unique = true)
+    private String tokenHash; // Access/Refresh 토큰 해시
 
+    @Column(name = "expires_at", nullable = false)
+    private Instant expiresAt; // 토큰 만료 시각과 동일하게 저장
 }
