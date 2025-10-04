@@ -87,12 +87,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             response.setStatus(401);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
-            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage(), null, 401));
+            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage()));
         } catch (UserNotFoundException e) {
             response.setStatus(403);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
-            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage(), null, 403));
+            objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage()));
         }
     }
 

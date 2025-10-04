@@ -10,16 +10,18 @@ import lombok.NoArgsConstructor;
 public class ApiResponse<T> {
     private String status;
     private String message;
-    private String errorCode;
     private T data;
-    private int code;
 
     public static <T> ApiResponse<T> success(String message, T data) {
-        return new ApiResponse<>("success", message, null, data, 200);
+        return new ApiResponse<>("success", message, data);
     }
 
-    public static <T> ApiResponse<T> error(String errorCode, String message, int code) {
-        return new ApiResponse<>("error", errorCode, errorCode, null, code);
+    public static <T> ApiResponse<T> error(String message) {
+        return new ApiResponse<>("error", message, null);
+    }
+
+    public static <T> ApiResponse<T> error(String message, T data) {
+        return new ApiResponse<>("error", message, data);
     }
 
 }
