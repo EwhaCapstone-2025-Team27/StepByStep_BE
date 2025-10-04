@@ -18,7 +18,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<Void>> handleBadCred(BadCredentialsException e) {
     HttpStatus status = HttpStatus.UNAUTHORIZED;
     return ResponseEntity.status(status)
-            .body(ApiResponse.error("INVALID_CREDENTIALS", e.getMessage(), status.value()));
+            .body(ApiResponse.error(formatErrorMessage("INVALID_CREDENTIALS", e.getMessage())));
   }
 
   // 400 잘못된 요청
@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<Void>> handleBadRequest(RuntimeException e) {
     HttpStatus status = HttpStatus.BAD_REQUEST;
     return ResponseEntity.status(status)
-            .body(ApiResponse.error("BAD_REQUEST", e.getMessage(), status.value()));
+            .body(ApiResponse.error(formatErrorMessage("BAD_REQUEST", e.getMessage())));
   }
 
   // 404 사용자 없음
@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<Void>> handleUserNotFound(UserNotFoundException e) {
     HttpStatus status = HttpStatus.NOT_FOUND;
     return ResponseEntity.status(status)
-            .body(ApiResponse.error("USER_NOT_FOUND", e.getMessage(), status.value()));
+            .body(ApiResponse.error(formatErrorMessage("USER_NOT_FOUND", e.getMessage())));
   }
 
   // 404 게시글 없음
@@ -42,7 +42,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<Void>> handleBoardNotFound(BoardNotFoundException e) {
     HttpStatus status = HttpStatus.NOT_FOUND;
     return ResponseEntity.status(status)
-            .body(ApiResponse.error("BOARD_NOT_FOUND", e.getMessage(), status.value()));
+            .body(ApiResponse.error(formatErrorMessage("BOARD_NOT_FOUND", e.getMessage())));
   }
 
   // 400 필수 파라미터 누락
@@ -51,7 +51,7 @@ public class GlobalExceptionHandler {
     HttpStatus status = HttpStatus.BAD_REQUEST;
     String msg = "필수 파라미터가 누락되었습니다: " + e.getParameterName();
     return ResponseEntity.status(status)
-            .body(ApiResponse.error("MISSING_PARAMETER", msg, status.value()));
+            .body(ApiResponse.error(formatErrorMessage("MISSING_PARAMETER", msg)));
   }
 
   // 403 권한 없음
@@ -59,7 +59,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException e) {
     HttpStatus status = HttpStatus.FORBIDDEN;
     return ResponseEntity.status(status)
-            .body(ApiResponse.error("ACCESS_DENIED", "요청한 리소스에 대한 권한이 없습니다.", status.value()));
+            .body(ApiResponse.error(formatErrorMessage("ACCESS_DENIED", "요청한 리소스에 대한 권한이 없습니다.")));
   }
 
   // 500 내부 서버 오류 (최종 예외 안전망)
@@ -68,6 +68,10 @@ public class GlobalExceptionHandler {
     HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
     // 운영 시에는 로깅: log.error("Unhandled exception", e);
     return ResponseEntity.status(status)
-            .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다.", status.value()));
+            .body(ApiResponse.error(formatErrorMessage("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다.")));
+  }
+
+  private String formatErrorMessage(String errorCode, String message) {
+    return String.format("[%s] %s", errorCode, message);
   }
 }
