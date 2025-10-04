@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import java.io.IOException;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -33,7 +35,7 @@ public final class CursorUtils {
         try {
             byte[] decoded = Base64.getDecoder().decode(cursor.getBytes(StandardCharsets.UTF_8));
             return OBJECT_MAPPER.readValue(decoded, type);
-        } catch (IllegalArgumentException | JsonProcessingException e) {
+        } catch (IllegalArgumentException | IOException e) {
             throw new IllegalArgumentException("유효하지 않은 커서입니다.");
         }
     }
