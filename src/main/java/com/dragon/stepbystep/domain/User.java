@@ -44,6 +44,13 @@ public class User extends BaseTimeEntity {
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Column(name = "points", nullable = false)
+    @Builder.Default
+    private Integer points = 0;
+
+    @Column(name = "points_updated_at", nullable = false)
+    private LocalDateTime pointsUpdatedAt;
+
     // 임시 비밀번호 관련 필드
     @Column(name = "temp_password_hash")
     private String tempPasswordHash;
@@ -74,5 +81,34 @@ public class User extends BaseTimeEntity {
 
     public void markDeleted(){
         this.status = UserStatus.DELETED;
+    }
+
+    @PrePersist
+    public void onPersist() {
+        if (this.points == null) {
+            this.points = 0;
+        }
+        if (this.pointsUpdatedAt == null) {
+            this.pointsUpdatedAt = LocalDateTime.now();
+        }
+    }
+
+    public void increasePoints(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("포인트 증가는 음수가 될 수 없습니다.");
+        }
+        this.points += amount;
+        this.pointsUpdatedAt = LocalDateTime.now();
+    }
+
+    public void decreasePoints(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("포인트 차감은 음수가 될 수 없습니다.");
+        }
+        if (this.points < amount) {
+            throw new IllegalStateException("포인트가 부족합니다.");
+        }
+        this.points -= amount;
+        this.pointsUpdatedAt = LocalDateTime.now();
     }
 }
