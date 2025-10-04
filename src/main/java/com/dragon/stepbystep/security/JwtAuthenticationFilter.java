@@ -6,12 +6,10 @@ import com.dragon.stepbystep.exception.UserNotFoundException;
 import com.dragon.stepbystep.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import jakarta.servlet.FilterChain;
@@ -23,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 
 @Slf4j
-@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final List<String> EXCLUDED_PATHS = List.of(
@@ -34,11 +31,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/auth/find-password"
     );
 
-    @Autowired
-    private JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
+
+    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, UserService userService) {
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.userService = userService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

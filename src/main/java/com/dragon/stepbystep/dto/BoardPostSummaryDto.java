@@ -20,7 +20,7 @@ public class BoardPostSummaryDto {
         return BoardPostSummaryDto.builder()
                 .postId(board.getId())
                 .nickname(resolveNickname(board))
-                .createdAt(board.getCreatedAt() != null ? board.getUpdatedAt() : board.getCreatedAt())
+                .createdAt(board.getCreatedAt() != null ? board.getCreatedAt() : board.getUpdatedAt())
                 .content(board.getContent())
                 .commentsNum(board.getCommentsCount())
                 .likesNum(board.getLikesCount())
