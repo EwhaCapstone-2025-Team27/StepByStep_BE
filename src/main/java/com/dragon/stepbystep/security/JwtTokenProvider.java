@@ -55,14 +55,14 @@ public class JwtTokenProvider {
     // refresh 토큰 검증 및 새로운 access 토큰 발급
     public String refreshAccessToken(String refreshToken) {
         if (tokenBlacklistService.isTokenBlacklisted(refreshToken)) {
-            throw new JwtAuthenticationException("유효하지 않은 토큰입니다.");
+            throw new JwtAuthenticationException("로그인되지 않은 사용자입니다.");
         }
 
         try {
             String userId = getUserIdFromToken(refreshToken);
             return createAccessToken(Long.valueOf(userId));
         } catch (Exception e) {
-            throw new JwtAuthenticationException("유효하지 않은 토큰입니다.");
+            throw new JwtAuthenticationException("로그인되지 않은 사용자입니다.");
         }
     }
 

@@ -58,11 +58,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = getTokenFromRequest(request);
 
             if (token == null) {
-                throw new JwtAuthenticationException("로그인되지 않은 사용자입니다.");  // 예외 발생
+                throw new JwtAuthenticationException("로그인되지 않은 사용자입니다.");
             }
 
             if (!jwtTokenProvider.validateToken(token)) {
-                throw new JwtAuthenticationException("유효하지 않은 토큰입니다.");  // 예외 발생
+                throw new JwtAuthenticationException("로그인되지 않은 사용자입니다.");
             }
 
             String userId = jwtTokenProvider.getUserIdFromToken(token);
@@ -89,7 +89,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             response.setCharacterEncoding("UTF-8");
             objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage()));
         } catch (UserNotFoundException e) {
-            response.setStatus(403);
+            response.setStatus(404);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setCharacterEncoding("UTF-8");
             objectMapper.writeValue(response.getWriter(), ApiResponse.error(e.getMessage()));

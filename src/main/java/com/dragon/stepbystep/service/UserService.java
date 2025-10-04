@@ -3,6 +3,9 @@ package com.dragon.stepbystep.service;
 import com.dragon.stepbystep.domain.User;
 import com.dragon.stepbystep.domain.enums.UserStatus;
 import com.dragon.stepbystep.dto.*;
+import com.dragon.stepbystep.exception.DuplicateEmailException;
+import com.dragon.stepbystep.exception.DuplicateNicknameException;
+import com.dragon.stepbystep.exception.UserDeletedException;
 import com.dragon.stepbystep.exception.UserNotFoundException;
 import com.dragon.stepbystep.repository.UserRepository;
 import com.dragon.stepbystep.security.JwtTokenProvider;
@@ -42,7 +45,7 @@ public class UserService {
     // 회원가입
     public UserResponseDto registerUser(UserRegisterDto dto) {
         if (dto == null) {
-            throw new IllegalArgumentException("필수 값이 누락되었습니다.");
+            throw new IllegalArgumentException("모든 항목을 입력해주세요.");
         }
 
         if (dto.getEmail() == null || dto.getEmail().isBlank()
@@ -51,15 +54,19 @@ public class UserService {
                 || dto.getNickname() == null || dto.getNickname().isBlank()
                 || dto.getGender() == null
                 || dto.getBirthyear() == null) {
-            throw new IllegalArgumentException("필수 값이 누락되었습니다.");
+            throw new IllegalArgumentException("모든 항목을 입력해주세요.");
         }
 
         if (!dto.getPassword().equals(dto.getPasswordConfirm())) {
-            throw new IllegalArgumentException("비밀번호 확인이 일치하지 않습니다.");
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
-        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new DuplicateEmailException();
+        }
+
+        if (userRepository.existsByNickname(dto.getNickname())) {
+            throw new DuplicateNicknameException();
         }
 
         String encodedPassword = passwordEncoder.encode(dto.getPassword());
@@ -84,17 +91,43 @@ public class UserService {
     // 사용자 정보 수정(닉네임, 성별, 출생년도)
     @Transactional
     public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("수정할 정보를 입력해주세요.");
+        }
+
         User target = userRepository.findById(id)
                 .orElseThrow(UserNotFoundException::new);
 
-        if (dto.getNickname() != null && !dto.getNickname().isBlank()) {
-            target.setNickname(dto.getNickname());
+        boolean hasNickname = dto.getNickname() != null;
+        boolean hasGender = dto.getGender() != null;
+        boolean hasBirthyear = dto.getBirthyear() != null;
+
+        if (!(hasNickname || hasGender || hasBirthyear)) {
+            throw new IllegalArgumentException("수정할 정보를 입력해주세요.");
         }
-        if (dto.getGender() != null) {
+
+        if (hasNickname) {
+            String nickname = dto.getNickname();
+            if (nickname.isBlank()) {
+                throw new IllegalArgumentException("닉네임을 입력해주세요.");
+            }
+            if (!nickname.matches("^[ㄱ-ㅎ가-힣A-Za-z0-9]{3,10}$")) {
+                throw new IllegalArgumentException("닉네임은 3~10자, 한국어/영어/숫자만 가능합니다.");
+            }
+            if (!nickname.equals(target.getNickname()) && userRepository.existsByNickname(nickname)) {
+                throw new DuplicateNicknameException();
+            }
+            target.setNickname(nickname);
+        }
+        if (hasGender) {
             target.setGender(dto.getGender());
         }
-        if (dto.getBirthyear() > 0) {
-            target.setBirthyear(dto.getBirthyear());
+        if (hasBirthyear) {
+            Integer birthyear = dto.getBirthyear();
+            if (birthyear < 1900 || birthyear > 2100) {
+                throw new IllegalArgumentException("출생년도는 1900~2100 사이의 숫자만 가능합니다.");
+            }
+            target.setBirthyear(birthyear);
         }
 
         User updated = userRepository.save(target);
@@ -125,11 +158,11 @@ public class UserService {
         }
 
         if (!dto.getNewPassword().equals(dto.getNewPasswordConfirm())) {
-            throw new IllegalArgumentException("새 비밀번호 확인이 일치하지 않습니다.");
+            throw new IllegalArgumentException("새 비밀번호가 일치하지 않습니다.");
         }
 
         if (passwordEncoder.matches(dto.getNewPassword(), user.getPasswordHash())) {
-            throw new IllegalStateException("기존 비밀번호와 동일합니다.");
+            throw new IllegalStateException("새 비밀번호가 기존 비밀번호와 동일합니다.");
         }
 
         if (user.getTempPasswordHash() != null
@@ -152,14 +185,14 @@ public class UserService {
     @Transactional
     public void issueTemporaryPassword(String email) {
         if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("이메일은 필수 값입니다.");
+            throw new IllegalArgumentException("이메일을 입력해주세요.");
         }
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new UserNotFoundException("해당 이메일로 가입된 계정을 찾을 수 없습니다."));
 
         if (user.getStatus() == UserStatus.DELETED) {
-            throw new IllegalStateException("탈퇴한 사용자입니다.");
+            throw new UserDeletedException();
         }
 
         String temporaryPassword = generateTemporaryPassword();
@@ -195,7 +228,11 @@ public class UserService {
     @Transactional
     public TokenDto login(LoginRequestDto dto) {
         User user = userRepository.findByEmail(dto.getEmail())
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new UserNotFoundException("해당 이메일로 가입된 계정을 찾을 수 없습니다."));
+
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new UserDeletedException();
+        }
 
         boolean normalOK = passwordEncoder.matches(dto.getPassword(), user.getPasswordHash());
         boolean tempOK = false;
@@ -215,7 +252,7 @@ public class UserService {
         }
 
         if (!(normalOK || tempOK)) {
-            throw new BadCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
+            throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
         }
 
         // 임시 비번 로그인 성공 시, 비번 변경 강제 플래그 유지/설정
@@ -232,10 +269,14 @@ public class UserService {
     // 이메일 찾기
     @Transactional
     public FindEmailResponseDto findEmail(FindEmailRequestDto dto) {
-        User user = userRepository.findByNicknameAndGenderAndBirthyearAndStatus(
-                        dto.getNickname(), dto.getGender(), dto.getBirthyear(), UserStatus.ACTIVE
+        User user = userRepository.findByNicknameAndGenderAndBirthyear(
+                        dto.getNickname(), dto.getGender(), dto.getBirthyear()
                 )
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new UserNotFoundException("일치하는 사용자를 찾을 수 없습니다."));
+
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new UserDeletedException();
+        }
 
         return FindEmailResponseDto.fromEntity(user);
     }
