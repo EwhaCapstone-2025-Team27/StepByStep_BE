@@ -49,21 +49,21 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiResponse<Void>> handleBadgeNotFound(BadgeNotFoundException e) {
     HttpStatus status = HttpStatus.NOT_FOUND;
     return ResponseEntity.status(status)
-            .body(ApiResponse.error("BADGE_NOT_FOUND", e.getMessage(), status.value()));
+            .body(ApiResponse.error(formatErrorMessage("BADGE_NOT_FOUND", e.getMessage())));
   }
 
   @ExceptionHandler(InsufficientPointsException.class)
   public ResponseEntity<ApiResponse<Void>> handleInsufficientPoints(InsufficientPointsException e) {
     HttpStatus status = HttpStatus.BAD_REQUEST;
     return ResponseEntity.status(status)
-            .body(ApiResponse.error("INSUFFICIENT_POINTS", e.getMessage(), status.value()));
+            .body(ApiResponse.error(formatErrorMessage("INSUFFICIENT_POINTS", e.getMessage())));
   }
 
   @ExceptionHandler(BadgeAlreadyOwnedException.class)
   public ResponseEntity<ApiResponse<Void>> handleBadgeAlreadyOwned(BadgeAlreadyOwnedException e) {
     HttpStatus status = HttpStatus.CONFLICT;
     return ResponseEntity.status(status)
-            .body(ApiResponse.error("BADGE_ALREADY_OWNED", e.getMessage(), status.value()));
+            .body(ApiResponse.error(formatErrorMessage("BADGE_ALREADY_OWNED", e.getMessage())));
   }
 
   // 400 필수 파라미터 누락
