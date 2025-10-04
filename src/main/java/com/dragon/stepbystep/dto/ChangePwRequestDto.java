@@ -7,12 +7,13 @@ import lombok.Setter;
 
 @Getter @Setter
 public class ChangePwRequestDto {
-    @NotBlank
+    @NotBlank(message = "현재 비밀번호를 입력해주세요.")
     private String currentPassword;
 
-    @Size(min = 8, max = 20) // 네 정책: 8~20자
+    @NotBlank(message = "새 비밀번호를 입력해주세요.")
+    @Size(min = 8, max = 20, message = "새 비밀번호는 8~20자여야 합니다.")
     private String newPassword;
 
-    @NotBlank
+    @NotBlank(message = "새 비밀번호 확인을 입력해주세요.")
     private String newPasswordConfirm;
 }

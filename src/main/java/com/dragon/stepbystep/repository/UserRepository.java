@@ -15,5 +15,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
             String nickname, GenderType gender, Integer birthyear, UserStatus status
     );
 
+    Optional<User> findByNicknameAndGenderAndBirthyear(
+            String nickname, GenderType gender, Integer birthyear
+    );
+
+    boolean existsByEmail(String email);
+
+    boolean existsByNickname(String nickname);
+
     Long id(Long id);
 }

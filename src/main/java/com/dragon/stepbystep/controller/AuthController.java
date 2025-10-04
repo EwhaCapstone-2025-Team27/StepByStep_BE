@@ -31,7 +31,7 @@ public class AuthController {
 
     // 회원가입
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<UserResponseDto>> registerUser(@RequestBody UserRegisterDto dto) {
+    public ResponseEntity<ApiResponse<UserResponseDto>> registerUser(@Valid @RequestBody UserRegisterDto dto) {
         UserResponseDto response = userService.registerUser(dto);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -41,7 +41,7 @@ public class AuthController {
 
     // 로그인
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<TokenDto>> login(@RequestBody LoginRequestDto dto) {
+    public ResponseEntity<ApiResponse<TokenDto>> login(@Valid @RequestBody LoginRequestDto dto) {
         TokenDto response = userService.login(dto);
 
         String message = response.isForcePasswordChange()
@@ -76,7 +76,7 @@ public class AuthController {
 
     // 비밀번호 찾기
     @PostMapping("/find-password")
-    public ResponseEntity<ApiResponse<Void>> findPassword(@RequestBody FindPasswordRequestDto dto) {
+    public ResponseEntity<ApiResponse<Void>> findPassword(@Valid @RequestBody FindPasswordRequestDto dto) {
         passwordResetService.issueTemporaryPassword(dto);
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -89,7 +89,7 @@ public class AuthController {
         String refreshToken = dto.getRefreshToken();
 
         if (refreshToken == null || refreshToken.isEmpty()) {
-            throw new JwtAuthenticationException("리프레시 토큰 제공되지 않았습니다.");
+            throw new JwtAuthenticationException("로그인되지 않은 사용자입니다.");
         }
 
         String accessToken = jwtTokenProvider.refreshAccessToken(refreshToken);
