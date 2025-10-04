@@ -19,6 +19,12 @@ public class Badge {
     private String name;
 
     @Column(nullable = false)
+    private String emoji;
+
+    @Column(nullable = false)
+    private String description;
+
+    @Column(nullable = false)
     private Integer price;
 
     @Column(nullable = false)
@@ -30,8 +36,10 @@ public class Badge {
     @Column(nullable = false)
     private java.time.LocalDateTime updatedAt;
 
-    public void updateBadge(String name, Integer price, Boolean isActive) {
+    public void updateBadge(String name, String emoji, String description, Integer price, Boolean isActive) {
         this.name = name;
+        this.emoji = emoji;
+        this.description = description;
         this.price = price;
         this.isActive = isActive;
     }
