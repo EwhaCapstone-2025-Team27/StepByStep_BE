@@ -29,13 +29,11 @@ public final class CursorUtils {
     }
 
     public static <T> T decode(String cursor, Class<T> type) {
-        if (cursor == null || cursor.isBlank()) {
-            return null;
-        }
+        if (cursor == null || cursor.isBlank()) return null;
         try {
             byte[] decoded = Base64.getDecoder().decode(cursor.getBytes(StandardCharsets.UTF_8));
             return OBJECT_MAPPER.readValue(decoded, type);
-        } catch (IllegalArgumentException | IOException e) {
+        } catch (IllegalArgumentException | IOException e) {   // ← IOException 반드시 처리
             throw new IllegalArgumentException("유효하지 않은 커서입니다.");
         }
     }
