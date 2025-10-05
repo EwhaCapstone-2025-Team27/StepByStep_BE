@@ -3,6 +3,8 @@ package com.dragon.stepbystep.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -30,11 +32,11 @@ public class Badge {
     @Column(nullable = false)
     private Boolean isActive;
 
-    @Column(nullable = false, updatable = false)
-    private java.time.LocalDateTime createdAt;
+    @Column(nullable = false, updatable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)")
+    private LocalDateTime createdAt;
 
-    @Column(nullable = false)
-    private java.time.LocalDateTime updatedAt;
+    @Column(nullable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)")
+    private LocalDateTime updatedAt;
 
     public void updateBadge(String name, String emoji, String description, Integer price, Boolean isActive) {
         this.name = name;
@@ -46,12 +48,13 @@ public class Badge {
 
     @PrePersist
     public void onCreate() {
-        this.createdAt = java.time.LocalDateTime.now();
-        this.updatedAt = java.time.LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     @PreUpdate
     public void onUpdate() {
-        this.updatedAt = java.time.LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

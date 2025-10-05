@@ -18,7 +18,7 @@ public class MailService {
     @Value("${app.mail.from:no-reply@stepbystep.com}")
     private String fromAddress;
 
-    @Value("${app.mail.temp-password-subject:StepByStep 임시 비밀번호 안내}")
+    @Value("${app.mail.temp-password-subject:성큼성큼 임시 비밀번호 안내}")
     private String temporaryPasswordSubject;
 
     public void sendTemporaryPasswordEmail(String to, String temporaryPassword, long expirationMinutes) {
@@ -38,7 +38,7 @@ public class MailService {
 
     private String buildTemporaryPasswordBody(String temporaryPassword, long expirationMinutes) {
         StringBuilder body = new StringBuilder();
-        body.append("안녕하세요, StepByStep 입니다.\n\n")
+        body.append("안녕하세요, 성큼성큼 입니다.\n\n")
                 .append("요청하신 임시 비밀번호는 다음과 같습니다.\n")
                 .append("임시 비밀번호: ")
                 .append(temporaryPassword)
