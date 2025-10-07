@@ -7,8 +7,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureMockMvc(addFilters = false)
 class StepByStepBeApplicationTests {
 	@Test
-	void contextLoads() { }
+	void contextLoads() {}
 }
+
