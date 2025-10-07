@@ -14,6 +14,10 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+
+@Profile({"local", "test"})   // <= prod에서는 로드되지 않음
 @Configuration
 public class DataSourceFallbackConfig {
 
