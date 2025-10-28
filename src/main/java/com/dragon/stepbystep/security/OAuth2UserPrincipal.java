@@ -1,6 +1,7 @@
 package com.dragon.stepbystep.security;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
@@ -8,31 +9,26 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-//@AllArgsConstructor
+@AllArgsConstructor
 public class OAuth2UserPrincipal implements OAuth2User {
-    private String UserEmail;
-    private Map<String, Object> attributes;
-    private Collection<? extends GrantedAuthority> authorities;
 
-    public OAuth2UserPrincipal(String userEmail, Map<String, Object> attributes,
-                               Collection<? extends GrantedAuthority> authorities) {
-        this.UserEmail = userEmail;
-        this.attributes = attributes;
-        this.authorities = authorities;
-    }
+    @Getter
+    private final String userId; // ← 명확히 userId 보관
+    private final Map<String, Object> attributes;
+    private final Collection<? extends GrantedAuthority> authorities;
 
     @Override
     public Map<String, Object> getAttributes() {
-        return this.attributes;
+        return attributes == null ? Collections.emptyMap() : attributes;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return authorities != null ? authorities : Collections.emptyList();
+        return authorities == null ? Collections.emptyList() : authorities;
     }
 
     @Override
     public String getName() {
-        return UserEmail;
+        return userId; // ← Authentication.getName() == userId 보장
     }
 }
