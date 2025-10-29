@@ -5,11 +5,14 @@ import com.dragon.stepbystep.common.ApiResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
-import org.springframework.http.MediaType;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,11 +31,11 @@ public class AIController {
     public ResponseEntity<ApiResponse<JsonNode>> chat(@RequestBody JsonNode body, Authentication auth) throws Exception {
         String raw = ai.chat(body.toString(), userId(auth));
         JsonNode aiJson = om.readTree(raw);
-        return ResponseEntity.ok(ApiResponse.success(aiJson)); // 팀 규격 유지
+        return ResponseEntity.ok(ApiResponse.success("AI 응답 수신 성공!", aiJson)); // 팀 규격 유지
     }
-}
 
-@PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-public Flux<String> chatStream(@RequestBody JsonNode body, Authentication auth) {
-    return ai.chatStream(body.toString(), userId(auth));
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> chatStream(@RequestBody JsonNode body, Authentication auth) {
+        return ai.chatStream(body.toString(), userId(auth));
+    }
 }

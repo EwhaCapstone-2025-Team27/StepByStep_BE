@@ -1,5 +1,7 @@
 package com.dragon.stepbystep.ai;
 
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -7,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
 
 @Slf4j
 @Component
@@ -39,13 +42,26 @@ public class AIClient {
         }
     }
 
+    // -------------------- Chat Stream --------------------
+    public Flux<String> chatStream(String json, String userId) {
+        return client().post()
+                .uri("/api/chat/stream") // AI 서버의 SSE endpoint
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .header("X-User-Id", userId)
+                .bodyValue(json)
+                .retrieve()
+                .bodyToFlux(String.class)
+                .doOnError(error -> log.warn("AI chat stream error", error));
+    }
+
     // ---------- Quiz ----------
     public String quizKeywords(String q, Integer limit, String userId) {
         try {
             return client().get()
                     .uri(uri -> uri.path("/api/quiz/keywords")
-                            .queryParamIfPresent("q", (q == null || q.isBlank()) ? java.util.Optional.empty() : java.util.Optional.of(q))
-                            .queryParamIfPresent("limit", limit == null ? java.util.Optional.empty() : java.util.Optional.of(limit))
+                            .queryParamIfPresent("q", Optional.ofNullable(q).filter(s -> !s.isBlank()))
+                            .queryParamIfPresent("limit", Optional.ofNullable(limit))
                             .build())
                     .header("X-User-Id", userId)
                     .retrieve()
@@ -62,8 +78,8 @@ public class AIClient {
             return client().get()
                     .uri(uri -> uri.path("/api/quiz")
                             .queryParam("mode", mode)
-                            .queryParamIfPresent("keyword", (keyword == null || keyword.isBlank()) ? java.util.Optional.empty() : java.util.Optional.of(keyword))
-                            .queryParamIfPresent("n", n == null ? java.util.Optional.empty() : java.util.Optional.of(n))
+                            .queryParamIfPresent("keyword", Optional.ofNullable(keyword).filter(s -> !s.isBlank()))
+                            .queryParamIfPresent("n", Optional.ofNullable(n))
                             .build())
                     .header("X-User-Id", userId)
                     .retrieve()
@@ -104,59 +120,33 @@ public class AIClient {
             throw e;
         }
     }
-}
 
-
-// ---------- Moderation ----------
-public String moderation(String path, String json, String userId) {
-    try {
-        return client().post()
-                .uri("/api/moderation" + path)
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-User-Id", userId)
-                .bodyValue(json)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-    } catch (WebClientResponseException e) {
-        log.warn("AI moderation error [{}] body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
-        throw e;
+    // ---------- Moderation ----------
+    public String moderation(String path, String json, String userId) {
+        try {
+            return client().post()
+                    .uri("/api/moderation" + path)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("X-User-Id", userId)
+                    .bodyValue(json)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            log.warn("AI moderation error [{}] body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            throw e;
+        }
     }
-}
-// 배치 텍스트 검사
-public String moderationCheckBatch(String rawJson, String userId) {
-    return client().post().uri("/api/moderation/check-batch")
-            .contentType(MediaType.APPLICATION_JSON)
-            .header("X-User-Id", userId)
-            .bodyValue(rawJson).retrieve().bodyToMono(String.class).block();
-}
 
-// RAG 스니펫 필터
-public String moderationFilterSnippets(String rawJson, String userId) {
-    return client().post().uri("/api/moderation/filter-snippets")
-            .contentType(MediaType.APPLICATION_JSON)
-            .header("X-User-Id", userId)
-            .bodyValue(rawJson).retrieve().bodyToMono(String.class).block();
-}
+    public String moderationCheckBatch(String rawJson, String userId) {
+        return moderation("/check-batch", rawJson, userId);
+    }
 
-// 혼합 배치 가드
-public String moderationGuardBatch(String rawJson, String userId) {
-    return client().post().uri("/api/moderation/guard-batch")
-            .contentType(MediaType.APPLICATION_JSON)
-            .header("X-User-Id", userId)
-            .bodyValue(rawJson).retrieve().bodyToMono(String.class).block();
-}
+    public String moderationFilterSnippets(String rawJson, String userId) {
+        return moderation("/filter-snippets", rawJson, userId);
+    }
 
-// -------------------- Chat Stream --------------------
-import reactor.core.publisher.Flux;
-
-public Flux<String> chatStream(String json, String userId) {
-    return client().post()
-            .uri("/api/chat/stream") // AI 서버의 SSE endpoint
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.TEXT_EVENT_STREAM)
-            .header("X-User-Id", userId)
-            .bodyValue(json)
-            .retrieve()
-            .bodyToFlux(String.class); // SSE 라인 그대로 전달
+    public String moderationGuardBatch(String rawJson, String userId) {
+        return moderation("/guard-batch", rawJson, userId);
+    }
 }
