@@ -28,7 +28,7 @@ public class QuizController {
             Authentication auth
     ) throws Exception {
         String raw = ai.quizKeywords(q, limit, userId(auth));
-        return ResponseEntity.ok(ApiResponse.success(om.readTree(raw)));
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 키워드 조회 성공!", om.readTree(raw)));
     }
 
     @GetMapping
@@ -39,18 +39,18 @@ public class QuizController {
             Authentication auth
     ) throws Exception {
         String raw = ai.createQuiz(mode, keyword, n, userId(auth));
-        return ResponseEntity.ok(ApiResponse.success(om.readTree(raw)));
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공!", om.readTree(raw)));
     }
 
     @PostMapping("/answer")
     public ResponseEntity<ApiResponse<JsonNode>> answer(@RequestBody JsonNode body, Authentication auth) throws Exception {
         String raw = ai.submitAnswer(body.toString(), userId(auth));
-        return ResponseEntity.ok(ApiResponse.success(om.readTree(raw)));
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 답안 제출 성공!", om.readTree(raw)));
     }
 
     @GetMapping("/results/{id}")
     public ResponseEntity<ApiResponse<JsonNode>> result(@PathVariable String id, Authentication auth) throws Exception {
         String raw = ai.getResult(id, userId(auth));
-        return ResponseEntity.ok(ApiResponse.success(om.readTree(raw)));
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 결과 조회 성공!", om.readTree(raw)));
     }
 }

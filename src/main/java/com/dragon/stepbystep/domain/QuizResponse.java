@@ -17,19 +17,19 @@ import java.time.LocalDateTime;
 public class QuizResponse {
 
     @Id
-    @Column
+    @Column(name = "attempt_id")
     private Long attemptId;
 
     @Id
-    @Column
+    @Column(name = "question_id")
     private Long questionId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(insertable = false, updatable = false)
+    @JoinColumn(name = "attempt_id", insertable = false, updatable = false)
     private QuizAttempt attempt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(insertable = false, updatable = false)
+    @JoinColumn(name = "question_id", insertable = false, updatable = false)
     private QuizQuestion question;
 
     @ManyToOne(fetch = FetchType.LAZY)
