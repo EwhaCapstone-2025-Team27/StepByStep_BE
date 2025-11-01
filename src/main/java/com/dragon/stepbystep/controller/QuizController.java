@@ -2,6 +2,7 @@ package com.dragon.stepbystep.controller;
 
 import com.dragon.stepbystep.ai.AIClient;
 import com.dragon.stepbystep.common.ApiResponse;
+import com.dragon.stepbystep.service.QuizRewardService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +17,21 @@ public class QuizController {
 
     private final AIClient ai;
     private final ObjectMapper om;
+    private final QuizRewardService quizRewardService;
 
     private String userId(Authentication auth) {
         return (auth != null && auth.getName() != null) ? auth.getName() : "0";
+    }
+
+    private Long parseUserId(Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(auth.getName());
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     @GetMapping("/keywords")
@@ -45,7 +58,12 @@ public class QuizController {
     @PostMapping("/answer")
     public ResponseEntity<ApiResponse<JsonNode>> answer(@RequestBody JsonNode body, Authentication auth) throws Exception {
         String raw = ai.submitAnswer(body.toString(), userId(auth));
-        return ResponseEntity.ok(ApiResponse.success("퀴즈 답안 제출 성공!", om.readTree(raw)));
+        JsonNode resultNode = om.readTree(raw);
+        Long userId = parseUserId(auth);
+        if (userId != null) {
+            quizRewardService.rewardCorrectAnswers(userId, resultNode);
+        }
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 답안 제출 성공!", resultNode));
     }
 
     @GetMapping("/results/{id}")
