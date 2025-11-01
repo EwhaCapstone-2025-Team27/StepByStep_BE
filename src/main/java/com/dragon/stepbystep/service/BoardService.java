@@ -32,6 +32,7 @@ public class BoardService {
     private final UserRepository userRepository;
     private final BoardLikeRepository boardLikeRepository;
     private final BoardCommentRepository boardCommentRepository;
+    private final PointRewardService pointRewardService;
 
     // 게시글 작성
     @Transactional
@@ -54,6 +55,7 @@ public class BoardService {
 
         Board savedPost = boardRepository.save(newPost);
         boardRepository.flush();
+        pointRewardService.rewardForBoardPost(authorId);
         return BoardPostResponseDto.from(savedPost);
     }
 
