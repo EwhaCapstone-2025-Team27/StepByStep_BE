@@ -144,8 +144,10 @@ public class UserService {
         String currentPassword = dto.getCurrentPassword();
 
         if (!allowWithoutCurrentPassword) {
-            if (currentPassword == null || currentPassword.isBlank()
-                    || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            if (currentPassword == null || currentPassword.isBlank()) {
+                throw new IllegalArgumentException("현재 비밀번호를 입력해주세요.");
+            }
+            if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
                 throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
             }
         } else if (currentPassword != null && !currentPassword.isBlank()) {
