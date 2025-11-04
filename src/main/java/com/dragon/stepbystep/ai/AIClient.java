@@ -1,7 +1,11 @@
 package com.dragon.stepbystep.ai;
+import com.dragon.stepbystep.dto.quiz.QuizKeywordDto;
+import lombok.Builder;
+
+import java.util.List;
+import java.util.Map;
 
 import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -149,4 +153,28 @@ public class AIClient {
     public String moderationGuardBatch(String rawJson, String userId) {
         return moderation("/guard-batch", rawJson, userId);
     }
+}
+
+public interface AIClient {
+
+    List<QuizKeywordDto> fetchQuizKeywords(String q, int limit);
+
+    QuizBundle generateQuiz(String mode, String keyword, int n, Integer seed);
+
+    @Builder
+    record QuizItem(
+            String type,                  
+            String question,
+            List<String> choices,             
+            int answerIndex,                  
+            String rationale,               
+            List<Map<String, Object>> references
+    ) { }
+
+    @Builder
+    record QuizBundle(
+            String mode,
+            String keyword,
+            List<QuizItem> items
+    ) { }
 }
