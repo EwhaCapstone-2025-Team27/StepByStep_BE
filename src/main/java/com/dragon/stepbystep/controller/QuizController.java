@@ -1,74 +1,56 @@
 package com.dragon.stepbystep.controller;
 
-import com.dragon.stepbystep.ai.AIClient;
 import com.dragon.stepbystep.common.ApiResponse;
-import com.dragon.stepbystep.service.QuizRewardService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.dragon.stepbystep.dto.quiz.*;
+import com.dragon.stepbystep.service.QuizService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/quiz")
+@RequiredArgsConstructor
 public class QuizController {
 
-    private final AIClient ai;
-    private final ObjectMapper om;
-    private final QuizRewardService quizRewardService;
+    private final QuizService quizService;
 
-    private String userId(Authentication auth) {
-        return (auth != null && auth.getName() != null) ? auth.getName() : "0";
-    }
-
-    private Long parseUserId(Authentication auth) {
-        if (auth == null || auth.getName() == null) {
-            return null;
-        }
-        try {
-            return Long.valueOf(auth.getName());
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
-    }
-
+    // 1) 키워드 목록
     @GetMapping("/keywords")
-    public ResponseEntity<ApiResponse<JsonNode>> keywords(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) Integer limit,
-            Authentication auth
-    ) throws Exception {
-        String raw = ai.quizKeywords(q, limit, userId(auth));
-        return ResponseEntity.ok(ApiResponse.success("퀴즈 키워드 조회 성공!", om.readTree(raw)));
+    public ApiResponse<QuizKeywordListResponseDto> getKeywords(
+            @RequestParam(value = "q", required = false) String q,
+            @RequestParam(value = "limit", defaultValue = "50") int limit,
+            @AuthenticationPrincipal(expression = "id") Long userId
+    ) {
+        return ApiResponse.ok(quizService.getKeywords(q, limit, userId));
     }
 
+    // 2) 퀴즈 세트 생성
     @GetMapping
-    public ResponseEntity<ApiResponse<JsonNode>> create(
-            @RequestParam String mode,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Integer n,
-            Authentication auth
-    ) throws Exception {
-        String raw = ai.createQuiz(mode, keyword, n, userId(auth));
-        return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공!", om.readTree(raw)));
+    public ApiResponse<QuizCreateResponseDto> createQuiz(
+            @RequestParam("mode") String mode,           // by_keyword | random
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "n", defaultValue = "5") int n,
+            @RequestParam(value = "seed", required = false) Integer seed,
+            @AuthenticationPrincipal(expression = "id") Long userId
+    ) {
+        return ApiResponse.ok(quizService.createQuiz(mode, keyword, n, seed, userId));
     }
 
+    // 3) 보기 선택 및 제출
     @PostMapping("/answer")
-    public ResponseEntity<ApiResponse<JsonNode>> answer(@RequestBody JsonNode body, Authentication auth) throws Exception {
-        String raw = ai.submitAnswer(body.toString(), userId(auth));
-        JsonNode resultNode = om.readTree(raw);
-        Long userId = parseUserId(auth);
-        if (userId != null) {
-            quizRewardService.rewardCorrectAnswers(userId, resultNode);
-        }
-        return ResponseEntity.ok(ApiResponse.success("퀴즈 답안 제출 성공!", resultNode));
+    public ApiResponse<QuizSubmitAnswerResponseDto> submitAnswer(
+            @RequestBody QuizSubmitAnswerRequestDto req,
+            @AuthenticationPrincipal(expression = "id") Long userId
+    ) {
+        return ApiResponse.ok(quizService.submitAnswer(req, userId));
     }
 
-    @GetMapping("/results/{id}")
-    public ResponseEntity<ApiResponse<JsonNode>> result(@PathVariable String id, Authentication auth) throws Exception {
-        String raw = ai.getResult(id, userId(auth));
-        return ResponseEntity.ok(ApiResponse.success("퀴즈 결과 조회 성공!", om.readTree(raw)));
+    // 4) 결과 조회
+    @GetMapping("/results/{resultId}")
+    public ApiResponse<QuizResultResponseDto> getResult(
+            @PathVariable("resultId") String resultId,
+            @AuthenticationPrincipal(expression = "id") Long userId
+    ) {
+        return ApiResponse.ok(quizService.getResult(resultId, userId));
     }
 }
