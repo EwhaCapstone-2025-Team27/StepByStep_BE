@@ -1,37 +1,54 @@
 package com.dragon.stepbystep.domain;
 
-import com.dragon.stepbystep.domain.enums.AttemptStatus;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
-@Entity @Table
+@Entity
+@Table(name = "quiz_attempt")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class QuizAttempt {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "scenario_id", nullable = false)
     private QuizScenario scenario;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn
-    private User user;
+    @Column(name = "started_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime startedAt = LocalDateTime.now();
 
-    @Column(nullable = false)
-    private LocalDateTime startedAt;
-
-    @Column
+    @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
 
-    private Integer scoreTotal;
-    private Integer scoreMax;
-
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
     private AttemptStatus status = AttemptStatus.IN_PROGRESS;
+
+    @Column(name = "score_total")
+    private Integer scoreTotal;  // 맞힌 개수
+
+    @Column(name = "score_max")
+    private Integer scoreMax;    // 전체 개수
+
+    @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<QuizResponse> responses = new ArrayList<>();
+
+    public enum AttemptStatus {
+        IN_PROGRESS, SUBMITTED, CANCELLED
+    }
 }
