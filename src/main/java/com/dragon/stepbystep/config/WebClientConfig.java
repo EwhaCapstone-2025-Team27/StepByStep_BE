@@ -20,11 +20,11 @@ public class WebClientConfig {
     public WebClient.Builder webClientBuilder() {
         // 네트워크 타임아웃 튜닝
         HttpClient httpClient = HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5_000)
-                .responseTimeout(Duration.ofSeconds(10))
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,  30000)
+                .responseTimeout(Duration.ofSeconds(60))
                 .doOnConnected(conn -> {
-                    conn.addHandlerLast(new ReadTimeoutHandler(10, TimeUnit.SECONDS));
-                    conn.addHandlerLast(new WriteTimeoutHandler(10, TimeUnit.SECONDS));
+                    conn.addHandlerLast(new ReadTimeoutHandler(60, TimeUnit.SECONDS));
+                    conn.addHandlerLast(new WriteTimeoutHandler(60, TimeUnit.SECONDS));
                 });
 
         // 큰 응답 대비 버퍼 상향(필요 시 조정)

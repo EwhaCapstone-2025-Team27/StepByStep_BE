@@ -2,59 +2,42 @@ package com.dragon.stepbystep.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "quiz_response")
+@IdClass(QuizResponseId.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity
-@Table
-@IdClass(QuizResponse.QuizResponseId.class)
 public class QuizResponse {
 
     @Id
-    @Column(name = "attempt_id")
-    private Long attemptId;
-
-    @Id
-    @Column(name = "question_id")
-    private Long questionId;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "attempt_id", insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "attempt_id")
     private QuizAttempt attempt;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "question_id", insertable = false, updatable = false)
+    @Id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_id")
     private QuizQuestion question;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn
+    @JoinColumn(name = "option_id")
     private QuizOption option;
 
-    @Lob
-    @Column
-    private String textAnswer;
+    @Column(name = "text_answer", columnDefinition = "TEXT")
+    private String textAnswer;  // 주관식 (현재 미사용)
 
-    @Column
+    @Column(name = "is_correct")
     private Boolean isCorrect;
 
+    @Column(name = "score")
     private Integer score;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @EqualsAndHashCode
-    public static class QuizResponseId implements Serializable {
-        private Long attemptId;
-        private Long questionId;
-    }
+    @Builder.Default
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

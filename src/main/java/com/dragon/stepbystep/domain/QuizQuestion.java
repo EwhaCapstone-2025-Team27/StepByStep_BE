@@ -2,30 +2,37 @@ package com.dragon.stepbystep.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
-@Entity @Table
+@Entity
+@Table(name = "quiz_question")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class QuizQuestion {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn
+    @Column(name = "stem", nullable = false, columnDefinition = "TEXT")
+    private String stem;  // 질문 본문
+
+    @Column(name = "correct_text", columnDefinition = "TEXT")
+    private String correctText;  // 해설
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "scenario_id", nullable = false)
     private QuizScenario scenario;
 
-    @Lob
-    @Column(nullable = false)
-    private String stem;
-
-    @Lob
-    @Column
-    private String correctText;
-
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<QuizOption> options = new ArrayList<>();
+
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<QuizResponse> responses = new ArrayList<>();
 }
