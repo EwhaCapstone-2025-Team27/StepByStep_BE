@@ -1,11 +1,17 @@
 package com.dragon.stepbystep.controller;
 
+import com.dragon.stepbystep.common.ApiResponse;
 import com.dragon.stepbystep.dto.*;
+import com.dragon.stepbystep.service.QuizRewardService;
 import com.dragon.stepbystep.service.QuizService;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import com.dragon.stepbystep.ai.AIClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
@@ -16,29 +22,29 @@ import java.util.Map;
 public class QuizController {
 
     private final QuizService quizService;
+    private final AIClient ai;
+    private final ObjectMapper om;
+    private final QuizRewardService quizRewardService;
+
+    // 추가!
+    private String userId(Authentication auth) {
+        return (auth != null && auth.getName() != null) ? auth.getName() : "0";
+    }
 
     /**
      * 1. 퀴즈 생성
      */
     @PostMapping("/generate")
-    public ResponseEntity<QuizGetResponseDto> generateQuiz(
-            @RequestBody QuizGenerateRequestDto request,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId
-    ) {
-        log.info("퀴즈 생성 요청: keyword={}, count={}", request.getKeyword(), request.getCount());
+    public ResponseEntity<ApiResponse<JsonNode>> generate(
+            @RequestBody JsonNode body,
+            Authentication auth
+    ) throws Exception {
+        String keyword = body.has("keyword") ? body.get("keyword").asText() : null;
+        Integer count = body.has("count") ? body.get("count").asInt() : null;
 
-        try {
-            // keyword, count만 필요 (userId는 별도 처리)
-            QuizGetResponseDto response = quizService.generateQuiz(
-                    request.getKeyword(),
-                    request.getCount() != null ? request.getCount() : 5
-            );
-            log.info(" 퀴즈 생성 성공");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error(" 퀴즈 생성 실패", e);
-            return ResponseEntity.status(500).build();
-        }
+        // mode 파라미터를 아예 전달하지 않음
+        String raw = ai.createQuiz("by_keyword", keyword, count, userId(auth));
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공!", om.readTree(raw)));
     }
 
     /**
