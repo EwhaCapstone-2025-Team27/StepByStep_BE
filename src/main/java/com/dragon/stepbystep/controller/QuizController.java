@@ -21,46 +21,67 @@ public class QuizController {
      * 1. 퀴즈 생성
      */
     @PostMapping("/generate")
-    public ResponseEntity<QuizGetResponseDto> generateQuiz(  // ✅ Dto 추가
-                                                             @RequestBody QuizGenerateRequestDto request,     // ✅ Dto 추가
-                                                             @RequestHeader(value = "X-User-Id", required = false) Long userId
+    public ResponseEntity<QuizGetResponseDto> generateQuiz(
+            @RequestBody QuizGenerateRequestDto request,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId
     ) {
-        log.info("퀴즈 생성 요청: {}", request);
+        log.info("퀴즈 생성 요청: keyword={}, count={}", request.getKeyword(), request.getCount());
 
-        if (userId == null) {
-            userId = 1L;
+        try {
+            // keyword, count만 필요 (userId는 별도 처리)
+            QuizGetResponseDto response = quizService.generateQuiz(
+                    request.getKeyword(),
+                    request.getCount() != null ? request.getCount() : 5
+            );
+            log.info(" 퀴즈 생성 성공");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error(" 퀴즈 생성 실패", e);
+            return ResponseEntity.status(500).build();
         }
-
-        QuizGetResponseDto response = quizService.generateQuiz(request, userId);  // ✅ Dto 추가
-        return ResponseEntity.ok(response);
     }
 
     /**
      * 2. 답안 제출
      */
     @PostMapping("/answer")
-    public ResponseEntity<SubmitAnswerResponseDto> submitAnswer(  // ✅ Dto 추가
-                                                                  @RequestBody SubmitAnswerRequestDto request  // ✅ Dto 추가
+    public ResponseEntity<SubmitAnswerResponseDto> submitAnswer(
+            @RequestBody SubmitAnswerRequestDto request
     ) {
         log.info("답안 제출: quizId={}, itemId={}, choiceIndex={}",
                 request.getQuizId(), request.getItemId(), request.getChoiceIndex());
 
-        SubmitAnswerResponseDto response = quizService.submitAnswer(request);  // ✅ Dto 추가
-        return ResponseEntity.ok(response);
+        try {
+            SubmitAnswerResponseDto response = quizService.submitAnswer(request);
+            log.info(" 답안 제출 성공");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error(" 답안 제출 실패", e);
+            return ResponseEntity.status(500).build();
+        }
     }
 
     /**
      * 3. 결과 조회
      */
     @GetMapping("/results/{resultId}")
-    public ResponseEntity<QuizResultResponseDto> getResult(  // ✅ Dto 추가
-                                                             @PathVariable String resultId
+    public ResponseEntity<QuizResultResponseDto> getResult(
+            @PathVariable String resultId
     ) {
         log.info("결과 조회: resultId={}", resultId);
 
-        Long attemptId = Long.parseLong(resultId);
-        QuizResultResponseDto response = quizService.getResult(attemptId);  // ✅ Dto 추가
-        return ResponseEntity.ok(response);
+        try {
+            Long attemptId = Long.parseLong(resultId);
+            QuizResultResponseDto response = quizService.getResult(attemptId);
+            log.info("결과 조회 성공");
+            return ResponseEntity.ok(response);
+        } catch (NumberFormatException e) {
+            log.error(" 잘못된 resultId 형식: {}", resultId);
+            return ResponseEntity.status(400).build();
+        } catch (Exception e) {
+            log.error(" 결과 조회 실패", e);
+            return ResponseEntity.status(500).build();
+        }
     }
 
     /**
