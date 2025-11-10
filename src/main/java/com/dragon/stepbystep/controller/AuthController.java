@@ -35,8 +35,7 @@ public class AuthController {
         UserResponseDto response = userService.registerUser(dto);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("사용자 등록 성공!", response)
-                );
+                .body(ApiResponse.success("사용자 등록 성공!", response));
     }
 
     // 로그인
