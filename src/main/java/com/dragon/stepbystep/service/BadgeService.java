@@ -22,6 +22,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -56,8 +57,8 @@ public class BadgeService {
 
         String nextCursor = null;
         if (hasNext && !badges.isEmpty()) {
-            Long lastId = badges.get(badges.size() - 1).getId();
-            nextCursor = CursorUtils.encode(new BadgeCursor(lastId));
+            Badge lastBadge = badges.get(badges.size() - 1);
+            nextCursor = CursorUtils.encode(new BadgeCursor(lastBadge.getId(), lastBadge.getCreatedAt()));
         }
 
         List<BadgeResponseDto> items = badges.stream()
@@ -119,6 +120,7 @@ public class BadgeService {
         return Math.min(limit, MAX_LIMIT);
     }
 
-    private record BadgeCursor(Long lastId) {
+    private record BadgeCursor(Long lastId, LocalDateTime lastCreatedAt) {
+
     }
 }
