@@ -20,16 +20,16 @@ public class WebClientConfig {
     public WebClient.Builder webClientBuilder() {
         // 네트워크 타임아웃 튜닝
         HttpClient httpClient = HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,  30000)
-                .responseTimeout(Duration.ofSeconds(60))
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10_000)
+                .responseTimeout(Duration.ofSeconds(180))
                 .doOnConnected(conn -> {
-                    conn.addHandlerLast(new ReadTimeoutHandler(60, TimeUnit.SECONDS));
-                    conn.addHandlerLast(new WriteTimeoutHandler(60, TimeUnit.SECONDS));
+                    conn.addHandlerLast(new ReadTimeoutHandler(500, TimeUnit.SECONDS));
+                    conn.addHandlerLast(new WriteTimeoutHandler(500, TimeUnit.SECONDS));
                 });
 
         // 큰 응답 대비 버퍼 상향(필요 시 조정)
         ExchangeStrategies strategies = ExchangeStrategies.builder()
-                .codecs(c -> c.defaultCodecs().maxInMemorySize(4 * 1024 * 1024)) // 4MB
+                .codecs(c -> c.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 4MB
                 .build();
 
         return WebClient.builder()
