@@ -20,7 +20,7 @@ public class BoardPostSummaryDto {
         return BoardPostSummaryDto.builder()
                 .postId(board.getId())
                 .nickname(resolveNickname(board))
-                .createdAt(board.getCreatedAt() != null ? board.getCreatedAt() : board.getUpdatedAt())
+                .createdAt(resolveTimestamp(board))
                 .content(board.getContent())
                 .commentsNum(board.getCommentsCount())
                 .likesNum(board.getLikesCount())
@@ -33,5 +33,10 @@ public class BoardPostSummaryDto {
             return storedNickname;
         }
         return board.getAuthor() != null ? board.getAuthor().getNickname() : null;
+    }
+
+    private static LocalDateTime resolveTimestamp(Board board) {
+        LocalDateTime updatedAt = board.getUpdatedAt();
+        return updatedAt != null ? updatedAt : board.getCreatedAt();
     }
 }

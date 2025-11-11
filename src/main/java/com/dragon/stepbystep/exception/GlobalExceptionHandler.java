@@ -103,6 +103,12 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(e.getMessage()));
     }
 
+    @ExceptionHandler(BoardSearchResultNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBoardSearchResultNotFound(BoardSearchResultNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(e.getMessage()));
+    }
+
     @ExceptionHandler(BadgeNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadgeNotFound(BadgeNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
