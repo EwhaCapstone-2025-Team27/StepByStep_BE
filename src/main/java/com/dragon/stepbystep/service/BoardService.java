@@ -8,6 +8,7 @@ import com.dragon.stepbystep.domain.enums.BoardSearchType;
 import com.dragon.stepbystep.dto.*;
 import com.dragon.stepbystep.exception.BoardCommentNotFoundException;
 import com.dragon.stepbystep.exception.BoardNotFoundException;
+import com.dragon.stepbystep.exception.BoardSearchResultNotFoundException;
 import com.dragon.stepbystep.exception.UserNotFoundException;
 import com.dragon.stepbystep.repository.BoardCommentRepository;
 import com.dragon.stepbystep.repository.BoardLikeRepository;
@@ -63,6 +64,10 @@ public class BoardService {
     @Transactional(readOnly = true)
     public BoardPostListResponseDto getPosts(String keyword, BoardSearchType searchType, Pageable pageable) {
         Page<Board> boards = searchBoards(keyword, searchType, pageable);
+
+        if (keyword != null && !keyword.isBlank() && boards.isEmpty()) {
+            throw new BoardSearchResultNotFoundException();
+        }
 
         Page<BoardPostSummaryDto> dtoPage = boards.map(BoardPostSummaryDto::from);
 

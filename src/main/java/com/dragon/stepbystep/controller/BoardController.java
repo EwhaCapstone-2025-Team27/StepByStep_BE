@@ -53,7 +53,7 @@ public class BoardController {
     @GetMapping("/posts/{postId}")
     public ResponseEntity<ApiResponse<BoardPostDetailResponseDto>> getPost(@PathVariable Long postId){
         BoardPostDetailResponseDto response = boardService.getPost(postId);
-        return ResponseEntity.ok(ApiResponse.success("특정 게시글 조회 성공!", response));
+        return ResponseEntity.ok(ApiResponse.success("게시글 조회 성공!", response));
     }
 
     // 게시글 수정
