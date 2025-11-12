@@ -68,7 +68,7 @@ public class AuthController {
     }
 
     // 이메일 찾기
-    @PostMapping("find-email")
+    @PostMapping("/find-email")
     public ResponseEntity<ApiResponse<FindEmailResponseDto>> findEmail(@Valid @RequestBody FindEmailRequestDto dto) {
         return ResponseEntity.ok(ApiResponse.success("이메일 찾기 성공!", userService.findEmail(dto)));
     }
