@@ -23,7 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -38,16 +40,16 @@ public class BadgeService {
     private final UserBadgeRepository userBadgeRepository;
     private final PointHistoryRepository pointHistoryRepository;
 
-    public BadgeListResponseDto getBadges(Integer limitParam, String cursor) {
+    public BadgeListResponseDto getBadges(Integer limitParam, String cursor, Long userId) {
         int limit = normalizeLimit(limitParam);
         Pageable pageable = PageRequest.of(0, limit + 1, Sort.by(Sort.Direction.DESC, "id"));
 
         BadgeCursor badgeCursor = CursorUtils.decode(cursor, BadgeCursor.class);
         List<Badge> badges;
         if (badgeCursor != null && badgeCursor.lastId() != null) {
-            badges = badgeRepository.findByIsActiveTrueAndIdLessThan(badgeCursor.lastId(), pageable);
+            badges = badgeRepository.findByIdLessThan(badgeCursor.lastId(), pageable);
         } else {
-            badges = badgeRepository.findByIsActiveTrue(pageable);
+            badges = badgeRepository.findAllBy(pageable);
         }
 
         boolean hasNext = badges.size() > limit;
@@ -61,8 +63,15 @@ public class BadgeService {
             nextCursor = CursorUtils.encode(new BadgeCursor(lastBadge.getId(), lastBadge.getCreatedAt()));
         }
 
+        Set<Long> ownedBadgeIds = userId == null
+                ? Set.of()
+                : new HashSet<>(userBadgeRepository.findBadgeIdsByUserId(userId));
+
         List<BadgeResponseDto> items = badges.stream()
-                .map(BadgeResponseDto::from)
+                .map(badge -> BadgeResponseDto.from(
+                        badge,
+                        ownedBadgeIds.contains(badge.getId())
+                ))
                 .toList();
 
         return new BadgeListResponseDto(items, new CursorPagingDto(nextCursor, hasNext));
@@ -74,7 +83,7 @@ public class BadgeService {
             throw new IllegalArgumentException("구매할 배지 ID는 필수입니다.");
         }
 
-        Badge badge = badgeRepository.findByIdAndIsActiveTrue(requestDto.id())
+        Badge badge = badgeRepository.findById(requestDto.id())
                 .orElseThrow(BadgeNotFoundException::new);
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);

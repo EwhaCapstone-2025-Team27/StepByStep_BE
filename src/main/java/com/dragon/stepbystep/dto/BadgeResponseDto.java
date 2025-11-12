@@ -14,14 +14,16 @@ public class BadgeResponseDto {
     private String emoji;
     private String description;
     private Integer price;
+    private boolean owned;
 
-    public static BadgeResponseDto from(Badge badge) {
+    public static BadgeResponseDto from(Badge badge, boolean owned) {
         return new BadgeResponseDto(
                 badge.getId(),
                 badge.getName(),
                 badge.getEmoji(),
                 badge.getDescription(),
-                badge.getPrice()
+                badge.getPrice(),
+                owned
         );
     }
 }
