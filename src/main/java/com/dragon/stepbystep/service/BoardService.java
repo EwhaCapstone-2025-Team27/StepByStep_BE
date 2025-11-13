@@ -57,19 +57,19 @@ public class BoardService {
         Board savedPost = boardRepository.save(newPost);
         boardRepository.flush();
         pointRewardService.rewardForBoardPost(authorId);
-        return BoardPostResponseDto.from(savedPost);
+        return BoardPostResponseDto.from(savedPost, authorId);
     }
 
     // 특정 게시글 보기
     @Transactional(readOnly = true)
-    public BoardPostListResponseDto getPosts(String keyword, BoardSearchType searchType, Pageable pageable) {
+    public BoardPostListResponseDto getPosts(String keyword, BoardSearchType searchType, Pageable pageable, Long currentUserId) {
         Page<Board> boards = searchBoards(keyword, searchType, pageable);
 
         if (keyword != null && !keyword.isBlank() && boards.isEmpty()) {
             throw new BoardSearchResultNotFoundException();
         }
 
-        Page<BoardPostSummaryDto> dtoPage = boards.map(BoardPostSummaryDto::from);
+        Page<BoardPostSummaryDto> dtoPage = boards.map(board -> BoardPostSummaryDto.from(board, currentUserId));
 
         return BoardPostListResponseDto.builder()
                 .content(dtoPage.getContent())
@@ -180,7 +180,7 @@ public class BoardService {
         board.updateContent(content);
         boardRepository.flush();
 
-        return BoardPostResponseDto.from(board);
+        return BoardPostResponseDto.from(board, authorId);
     }
 
     // 게시글 삭제

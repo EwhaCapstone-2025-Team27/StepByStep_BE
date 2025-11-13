@@ -13,13 +13,24 @@ public class BoardPostResponseDto {
     private final String nickname;
     private final LocalDateTime createdAt;
     private final String content;
+    private final Long userId;
+    private final boolean isMine;
 
     public static BoardPostResponseDto from(Board board) {
+        return from(board, null);
+    }
+
+    public static BoardPostResponseDto from(Board board, Long currentUserId) {
+        Long authorId = board.getAuthor() != null ? board.getAuthor().getId() : null;
+        boolean mine = currentUserId != null && board.isAuthor(currentUserId);
+
         return BoardPostResponseDto.builder()
                 .id(board.getId())
                 .nickname(resolveNickname(board))
                 .createdAt(resolveTimestamp(board))
                 .content(board.getContent())
+                .userId(authorId)
+                .isMine(mine)
                 .build();
     }
 

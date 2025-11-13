@@ -37,6 +37,7 @@ public class BoardController {
     // 게시글 전체 조회
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<BoardPostListResponseDto>> getPosts(
+            Principal principal,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "searchType", required = false, defaultValue = "ALL") String searchTypeValue,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -44,7 +45,8 @@ public class BoardController {
     ) {
         BoardSearchType searchType = BoardSearchType.from(searchTypeValue);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        BoardPostListResponseDto response = boardService.getPosts(keyword, searchType, pageable);
+        Long currentUserId = principal != null ? Long.valueOf(principal.getName()) : null;
+        BoardPostListResponseDto response = boardService.getPosts(keyword, searchType, pageable, currentUserId);
 
         return ResponseEntity.ok(ApiResponse.success("게시글 목록 조회 성공!", response));
     }
