@@ -53,8 +53,9 @@ public class BoardController {
 
     // 특정 게시글 조회
     @GetMapping("/posts/{postId}")
-    public ResponseEntity<ApiResponse<BoardPostDetailResponseDto>> getPost(@PathVariable Long postId){
-        BoardPostDetailResponseDto response = boardService.getPost(postId);
+    public ResponseEntity<ApiResponse<BoardPostDetailResponseDto>> getPost(Principal principal, @PathVariable Long postId){
+        Long currentUserId = principal != null ? Long.valueOf(principal.getName()) : null;
+        BoardPostDetailResponseDto response = boardService.getPost(postId, currentUserId);
         return ResponseEntity.ok(ApiResponse.success("게시글 조회 성공!", response));
     }
 

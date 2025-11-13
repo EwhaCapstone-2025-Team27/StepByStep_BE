@@ -82,13 +82,13 @@ public class BoardService {
     }
 
     @Transactional(readOnly = true)
-    public BoardPostDetailResponseDto getPost(Long postId) {
+    public BoardPostDetailResponseDto getPost(Long postId, Long currentUserId) {
         Board board = boardRepository.findById(postId)
                 .orElseThrow(() -> new BoardNotFoundException(postId));
 
         List<BoardCommentResponseDto> comments = boardCommentRepository.findByBoard_IdOrderByCreatedAtAsc(postId)
                 .stream()
-                .map(BoardCommentResponseDto::from)
+                .map(comment -> BoardCommentResponseDto.from(comment, currentUserId))
                 .collect(Collectors.toList());
 
         return BoardPostDetailResponseDto.from(board, comments);
@@ -118,7 +118,7 @@ public class BoardService {
         boardCommentRepository.flush();
         board.increaseCommentsCount();
 
-        return BoardCommentResponseDto.from(savedComment);
+        return BoardCommentResponseDto.from(savedComment, userId);
     }
 
     // 댓글 수정
@@ -142,7 +142,7 @@ public class BoardService {
         comment.updateContent(content);
         boardCommentRepository.flush();
 
-        return BoardCommentResponseDto.from(comment);
+        return BoardCommentResponseDto.from(comment, userId);
     }
 
     // 댓글 삭제
