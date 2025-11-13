@@ -111,7 +111,7 @@ public class BoardController {
     }
 
     // 댓글 수정
-    @PatchMapping("/posts/{postId}/comments/{commentId}")
+    @PatchMapping("/posts{postId}/comments/{commentId}")
     public ResponseEntity<ApiResponse<BoardCommentResponseDto>> updateComment(
             Principal principal,
             @PathVariable Long postId,
