@@ -28,13 +28,8 @@ public class BoardCommentResponseDto {
                 .nickname(comment.getAuthorNickname())
                 .postId(comment.getBoard().getId())
                 .content(comment.getContent())
-                .createdAt(resolveTimestamp(comment))
+                .createdAt(comment.getCreatedAt())
                 .isMine(mine)
                 .build();
-    }
-
-    private static LocalDateTime resolveTimestamp(BoardComment comment) {
-        LocalDateTime updatedAt = comment.getUpdatedAt();
-        return updatedAt != null ? updatedAt : comment.getCreatedAt();
     }
 }

@@ -91,7 +91,7 @@ public class BoardService {
                 .map(comment -> BoardCommentResponseDto.from(comment, currentUserId))
                 .collect(Collectors.toList());
 
-        return BoardPostDetailResponseDto.from(board, comments);
+        return BoardPostDetailResponseDto.from(board, comments, currentUserId);
     }
 
     // 댓글 작성

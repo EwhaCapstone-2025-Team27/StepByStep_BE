@@ -27,7 +27,7 @@ public class BoardPostResponseDto {
         return BoardPostResponseDto.builder()
                 .id(board.getId())
                 .nickname(resolveNickname(board))
-                .createdAt(resolveTimestamp(board))
+                .createdAt(board.getCreatedAt())
                 .content(board.getContent())
                 .userId(authorId)
                 .isMine(mine)
@@ -40,10 +40,5 @@ public class BoardPostResponseDto {
             return storedNickname;
         }
         return board.getAuthor() != null ? board.getAuthor().getNickname() : null;
-    }
-
-    private static LocalDateTime resolveTimestamp(Board board) {
-        LocalDateTime updatedAt = board.getUpdatedAt();
-        return updatedAt != null ? updatedAt : board.getCreatedAt();
     }
 }
