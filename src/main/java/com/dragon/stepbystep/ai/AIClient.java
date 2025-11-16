@@ -55,6 +55,23 @@ public class AIClient {
                 .doOnError(error -> log.warn("AI chat stream error", error));
     }
 
+    public String search(String query, Integer k, String userId) {
+        try {
+            return client().get()
+                    .uri(uri -> uri.path("/v1/search")
+                            .queryParam("q", query == null ? "" : query)
+                            .queryParamIfPresent("k", Optional.ofNullable(k))
+                            .build())
+                    .header("X-User-Id", userId)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            log.warn("AI search error [{}] body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            throw e;
+        }
+    }
+
     // ---------- Quiz ----------
     public String quizKeywords(String q, Integer limit, String userId) {
         try {
