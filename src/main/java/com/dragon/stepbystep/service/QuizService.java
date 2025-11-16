@@ -28,12 +28,6 @@ public class QuizService {
     private final QuizOptionRepository optionRepository;
     private final QuizAttemptRepository attemptRepository;
     private final QuizResponseRepository responseRepository;
-
-    // ===== Repositories =====
-    private final QuizQuestionRepository questionRepository;
-    private final QuizOptionRepository optionRepository;
-    private final QuizAttemptRepository attemptRepository;
-    private final QuizResponseRepository responseRepository;
     private final QuizScenarioRepository scenarioRepository;
 
     private final Random random = new Random();
