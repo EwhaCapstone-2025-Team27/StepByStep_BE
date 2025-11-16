@@ -6,6 +6,8 @@ import com.dragon.stepbystep.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -47,6 +49,31 @@ public class QuizService {
 
     @Value("${quiz.min.count:1}")
     private Integer minCount;
+
+    private static final int DEFAULT_KEYWORD_LIMIT = 10;
+    private static final int MAX_KEYWORD_LIMIT = 50;
+
+    /**
+     * 0. 키워드 추천 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public List<String> getKeywords(String query, Integer limit) {
+        int normalizedLimit = normalizeKeywordLimit(limit);
+        Pageable pageable = PageRequest.of(0, normalizedLimit);
+
+        List<QuizScenario> scenarios;
+        if (StringUtils.hasText(query)) {
+            scenarios = scenarioRepository
+                    .findByTitleContainingIgnoreCaseOrderByIdAsc(query, pageable);
+        } else {
+            scenarios = scenarioRepository.findAllByOrderByIdAsc(pageable);
+        }
+
+        return scenarios.stream()
+                .map(QuizScenario::getTitle)
+                .distinct()
+                .collect(Collectors.toList());
+    }
 
     /**
      * 1. 퀴즈 생성 (RDS에 저장된 문제 기반)
@@ -272,6 +299,17 @@ public class QuizService {
         if (normalized > maxCount) {
             log.warn("요청된 count={} 이 max={} 보다 커 보정합니다.", normalized, maxCount);
             normalized = maxCount;
+        }
+        return normalized;
+    }
+
+    private int normalizeKeywordLimit(Integer requested) {
+        int normalized = requested != null ? requested : DEFAULT_KEYWORD_LIMIT;
+        if (normalized < 1) {
+            normalized = 1;
+        }
+        if (normalized > MAX_KEYWORD_LIMIT) {
+            normalized = MAX_KEYWORD_LIMIT;
         }
         return normalized;
     }

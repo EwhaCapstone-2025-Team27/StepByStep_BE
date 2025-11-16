@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
+
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -32,7 +34,17 @@ public class QuizController {
         }
     }
 
-    // 1. 퀴즈 생성
+    // 0. 키워드 목록
+    @GetMapping("/keywords")
+    public ResponseEntity<ApiResponse<List<String>>> getKeywords(
+            @RequestParam(value = "q", required = false) String query,
+            @RequestParam(value = "limit", required = false) Integer limit
+    ) {
+        List<String> keywords = quizService.getKeywords(query, limit);
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 키워드 조회 성공!", keywords));
+    }
+
+    // 1. 퀴즈 생성 (POST)
     @PostMapping("/generate")
     public ResponseEntity<ApiResponse<QuizGetResponseDto>> generate(
             @RequestBody QuizGenerateRequestDto body,
@@ -44,6 +56,19 @@ public class QuizController {
                 userId(auth)
         );
 
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공!", response));
+    }
+
+    // 1-1. 퀴즈 생성 (GET - 프론트 호환)
+    @GetMapping("/generate")
+    public ResponseEntity<ApiResponse<QuizGetResponseDto>> generateUsingQuery(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "count", required = false) Integer count,
+            @RequestParam(value = "size", required = false) Integer size,
+            Authentication auth
+    ) {
+        Integer requestedCount = count != null ? count : size;
+        QuizGetResponseDto response = quizService.generateQuiz(keyword, requestedCount, userId(auth));
         return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공!", response));
     }
 
