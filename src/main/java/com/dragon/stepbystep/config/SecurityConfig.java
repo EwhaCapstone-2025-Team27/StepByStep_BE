@@ -57,6 +57,8 @@ public class SecurityConfig {
                                         "/api/healthz",
                                         "/api/chat/**", // 데모동안 공개
                                         "/api/quiz/**", // 데모동안 공개
+                                        "/api/ai/**",   // AI 연동 엔드포인트 (웹/모바일 공용)
+                                        "/api/moderation/**", // AI 모더레이션 프록시
                                         "/api/auth/register",
                                         "/api/auth/login",
                                         "/api/auth/refresh",

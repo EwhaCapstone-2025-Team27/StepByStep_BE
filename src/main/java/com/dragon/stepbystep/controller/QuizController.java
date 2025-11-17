@@ -4,15 +4,13 @@ import com.dragon.stepbystep.common.ApiResponse;
 import com.dragon.stepbystep.dto.*;
 import com.dragon.stepbystep.service.QuizRewardService;
 import com.dragon.stepbystep.service.QuizService;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
-import com.dragon.stepbystep.ai.AIClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -22,34 +20,59 @@ import java.util.Map;
 public class QuizController {
 
     private final QuizService quizService;
-    private final AIClient ai;
-    private final ObjectMapper om;
     private final QuizRewardService quizRewardService;
 
     // 추가!
-    private String userId(Authentication auth) {
-        return (auth != null && auth.getName() != null) ? auth.getName() : "0";
+    private Long userId(Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(auth.getName());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 
-    /**
-     * 1. 퀴즈 생성
-     */
+    // 0. 키워드 목록
+    @GetMapping("/keywords")
+    public ResponseEntity<ApiResponse<List<String>>> getKeywords(
+            @RequestParam(value = "q", required = false) String query,
+            @RequestParam(value = "limit", required = false) Integer limit
+    ) {
+        List<String> keywords = quizService.getKeywords(query, limit);
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 키워드 조회 성공!", keywords));
+    }
+
+    // 1. 퀴즈 생성 (POST)
     @PostMapping("/generate")
-    public ResponseEntity<ApiResponse<JsonNode>> generate(
-            @RequestBody JsonNode body,
+    public ResponseEntity<ApiResponse<QuizGetResponseDto>> generate(
+            @RequestBody QuizGenerateRequestDto body,
             Authentication auth
-    ) throws Exception {
-        String keyword = body.has("keyword") ? body.get("keyword").asText() : null;
-        Integer count = body.has("count") ? body.get("count").asInt() : null;
+    ) {
+        QuizGetResponseDto response = quizService.generateQuiz(
+                body.getKeyword(),
+                body.getCount(),
+                userId(auth)
+        );
 
-        // mode 파라미터를 아예 전달하지 않음
-        String raw = ai.createQuiz("by_keyword", keyword, count, userId(auth));
-        return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공!", om.readTree(raw)));
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공!", response));
     }
 
-    /**
-     * 2. 답안 제출
-     */
+    // 1-1. 퀴즈 생성 (GET - 프론트 호환)
+    @GetMapping("/generate")
+    public ResponseEntity<ApiResponse<QuizGetResponseDto>> generateUsingQuery(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "count", required = false) Integer count,
+            @RequestParam(value = "size", required = false) Integer size,
+            Authentication auth
+    ) {
+        Integer requestedCount = count != null ? count : size;
+        QuizGetResponseDto response = quizService.generateQuiz(keyword, requestedCount, userId(auth));
+        return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공!", response));
+    }
+
+    // 2. 답안 제출
     @PostMapping("/answer")
     public ResponseEntity<SubmitAnswerResponseDto> submitAnswer(
             @RequestBody SubmitAnswerRequestDto request
@@ -67,9 +90,7 @@ public class QuizController {
         }
     }
 
-    /**
-     * 3. 결과 조회
-     */
+    // 3. 결과 조회
     @GetMapping("/results/{resultId}")
     public ResponseEntity<QuizResultResponseDto> getResult(
             @PathVariable String resultId
@@ -90,9 +111,7 @@ public class QuizController {
         }
     }
 
-    /**
-     * 4. 사용자 퀴즈 히스토리 조회
-     */
+    // 4. 사용자 퀴즈 히스토리 조회
     @GetMapping("/history")
     public ResponseEntity<?> getHistory(
             @RequestHeader(value = "X-User-Id", required = false) Long userId

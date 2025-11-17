@@ -1,21 +1,23 @@
 package com.dragon.stepbystep.service;
 
-import com.dragon.stepbystep.dto.*;
 import com.dragon.stepbystep.domain.*;
+import com.dragon.stepbystep.dto.*;
 import com.dragon.stepbystep.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,14 +30,11 @@ public class QuizService {
     private final QuizOptionRepository optionRepository;
     private final QuizAttemptRepository attemptRepository;
     private final QuizResponseRepository responseRepository;
+    private final QuizScenarioRepository scenarioRepository;
 
-    // ===== Dependencies =====
-    private final RestTemplate restTemplate;
+    private final Random random = new Random();
 
     // ===== Configuration Properties =====
-    @Value("${quiz.ai.server.url}")
-    private String aiServerUrl;
-
     @Value("${quiz.points.correct:20}")
     private Integer pointsCorrect;
 
@@ -51,61 +50,77 @@ public class QuizService {
     @Value("${quiz.min.count:1}")
     private Integer minCount;
 
+    private static final int DEFAULT_KEYWORD_LIMIT = 10;
+    private static final int MAX_KEYWORD_LIMIT = 50;
+
     /**
-     * 1. 퀴즈 생성 (AI 서버 호출 → DB 저장)
+     * 0. 키워드 추천 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public List<String> getKeywords(String query, Integer limit) {
+        int normalizedLimit = normalizeKeywordLimit(limit);
+        Pageable pageable = PageRequest.of(0, normalizedLimit);
+
+        List<QuizScenario> scenarios;
+        if (StringUtils.hasText(query)) {
+            scenarios = scenarioRepository
+                    .findByTitleContainingIgnoreCaseOrderByIdAsc(query, pageable);
+        } else {
+            scenarios = scenarioRepository.findAllByOrderByIdAsc(pageable);
+        }
+
+        return scenarios.stream()
+                .map(QuizScenario::getTitle)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 1. 퀴즈 생성 (RDS에 저장된 문제 기반)
      *
      * @param keyword 퀴즈 키워드
      * @param count 생성할 문제 수
-     * @return AI 서버에서 반환한 퀴즈 DTO
+     * @param userId 퀴즈를 생성하는 사용자
+     * @return 데이터베이스에서 구성한 퀴즈 DTO
      */
     @Transactional
-    public QuizGetResponseDto generateQuiz(String keyword, Integer count) {
+    public QuizGetResponseDto generateQuiz(String keyword, Integer count, Long userId) {
+        int problemCount = normalizeCount(count);
+
         try {
-            // count 기본값 설정
-            if (count == null) {
-                count = defaultCount;
+            QuizScenario scenario = resolveScenario(keyword);
+
+            List<QuizQuestion> questions = questionRepository
+                    .findByScenarioIdOrderByIdAsc(scenario.getId());
+
+            if (questions.isEmpty()) {
+                throw new RuntimeException("선택한 시나리오에 등록된 문제가 없습니다.");
             }
 
-            // count 범위 검증
-            if (count < minCount || count > maxCount) {
-                log.warn("요청된 count={} 범위 초과 (min={}, max={})", count, minCount, maxCount);
-                count = Math.min(Math.max(count, minCount), maxCount);
-            }
+            List<QuizQuestion> selectedQuestions = pickQuestions(questions, problemCount);
 
-            log.info(" AI 서버 호출 시작: keyword={}, count={}, url={}", keyword, count, aiServerUrl);
+            QuizAttempt attempt = QuizAttempt.builder()
+                    .userId(userId != null ? userId : 0L)
+                    .scenario(scenario)
+                    .scoreMax(selectedQuestions.size())
+                    .scoreTotal(0)
+                    .build();
 
-            // AI 서버 요청 데이터
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("keyword", keyword);
-            requestBody.put("count", count);
+            attemptRepository.save(attempt);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+            List<QuizItemDto> items = selectedQuestions.stream()
+                    .map(this::toQuizItemDto)
+                    .collect(Collectors.toList());
 
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-
-            // AI 서버 호출
-            ResponseEntity<QuizGetResponseDto> response = restTemplate.postForEntity(
-                    aiServerUrl,
-                    request,
-                    QuizGetResponseDto.class
-            );
-
-            // 응답 검증
-            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-                log.error(" AI 서버 퀴즈 생성 실패: status={}", response.getStatusCode());
-                throw new RuntimeException("AI 서버 퀴즈 생성 실패: " + response.getStatusCode());
-            }
-
-            QuizGetResponseDto aiResponse = response.getBody();
-
-            log.info(" AI 서버 응답 성공: quizId={}, total={}",
-                    aiResponse.getQuizId(), aiResponse.getTotal());
-
-            return aiResponse;
-
+            return QuizGetResponseDto.builder()
+                    .quizId(String.valueOf(attempt.getId()))
+                    .mode(StringUtils.hasText(keyword) ? "by_keyword" : "random")
+                    .keyword(StringUtils.hasText(keyword) ? keyword : scenario.getTitle())
+                    .total(items.size())
+                    .items(items)
+                    .build();
         } catch (Exception e) {
-            log.error(" AI 서버 호출 중 예외 발생", e);
+            log.error("퀴즈 생성 중 예외 발생", e);
             throw new RuntimeException("퀴즈 생성 실패: " + e.getMessage(), e);
         }
     }
@@ -272,6 +287,70 @@ public class QuizService {
     }
 
     // ===== Private Helper Methods =====
+
+    // ===== Private Helper Methods =====
+
+    private int normalizeCount(Integer requested) {
+        int normalized = requested != null ? requested : defaultCount;
+        if (normalized < minCount) {
+            log.warn("요청된 count={} 이 min={} 보다 작아 보정합니다.", normalized, minCount);
+            normalized = minCount;
+        }
+        if (normalized > maxCount) {
+            log.warn("요청된 count={} 이 max={} 보다 커 보정합니다.", normalized, maxCount);
+            normalized = maxCount;
+        }
+        return normalized;
+    }
+
+    private int normalizeKeywordLimit(Integer requested) {
+        int normalized = requested != null ? requested : DEFAULT_KEYWORD_LIMIT;
+        if (normalized < 1) {
+            normalized = 1;
+        }
+        if (normalized > MAX_KEYWORD_LIMIT) {
+            normalized = MAX_KEYWORD_LIMIT;
+        }
+        return normalized;
+    }
+
+    private QuizScenario resolveScenario(String keyword) {
+        if (StringUtils.hasText(keyword)) {
+            return scenarioRepository
+                    .findFirstByTitleContainingIgnoreCaseOrderByIdAsc(keyword)
+                    .orElseThrow(() -> new RuntimeException("해당 키워드와 일치하는 시나리오가 없습니다."));
+        }
+
+        List<QuizScenario> allScenarios = scenarioRepository.findAll();
+        if (allScenarios.isEmpty()) {
+            throw new RuntimeException("등록된 시나리오가 없습니다.");
+        }
+        return allScenarios.get(random.nextInt(allScenarios.size()));
+    }
+
+    private List<QuizQuestion> pickQuestions(List<QuizQuestion> questions, int limit) {
+        if (questions.size() <= limit) {
+            return new ArrayList<>(questions);
+        }
+        List<QuizQuestion> shuffled = new ArrayList<>(questions);
+        Collections.shuffle(shuffled, random);
+        return shuffled.subList(0, limit);
+    }
+
+    private QuizItemDto toQuizItemDto(QuizQuestion question) {
+        List<String> choices = optionRepository.findByQuestionIdOrderByLabel(question.getId())
+                .stream()
+                .map(QuizOption::getText)
+                .collect(Collectors.toList());
+
+        return QuizItemDto.builder()
+                .itemId(String.valueOf(question.getId()))
+                .type("concept")
+                .question(question.getStem())
+                .choices(choices)
+                .references(Collections.emptyList())
+                .build();
+    }
 
     /**
      * 특정 문제의 정답 인덱스 조회
