@@ -1,3 +1,4 @@
+// src/main/java/com/dragon/stepbystep/ai/AIClient.java
 package com.dragon.stepbystep.ai;
 
 import java.util.Optional;
@@ -18,6 +19,7 @@ public class AIClient {
 
     private final WebClient.Builder webClientBuilder;
 
+    // FastAPI AI 서버 베이스 URL (예: http://127.0.0.1:8000)
     @Value("${ai.base-url:http://127.0.0.1:8000}")
     private String aiBaseUrl;
 
@@ -25,27 +27,10 @@ public class AIClient {
         return webClientBuilder.baseUrl(aiBaseUrl).build();
     }
 
-    // ---------- Chat ----------
-    public String chat(String json, String userId) {
-        try {
-            return client().post()
-                    .uri("/v1/chat")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .header("X-User-Id", userId) // 내부 인증(로컬/사설망)
-                    .bodyValue(json)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-        } catch (WebClientResponseException e) {
-            log.warn("AI chat error [{}] body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
-            throw e;
-        }
-    }
-
-    // -------------------- Chat Stream --------------------
+    // -------------------- Chat Stream (명세: POST /api/chat/stream) --------------------
     public Flux<String> chatStream(String json, String userId) {
         return client().post()
-                .uri("/api/chat/stream") // AI 서버의 SSE endpoint
+                .uri("/api/chat/stream") // 최종 경로: AI_BASE_URL + /api/chat/stream
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_EVENT_STREAM)
                 .header("X-User-Id", userId)
@@ -53,23 +38,6 @@ public class AIClient {
                 .retrieve()
                 .bodyToFlux(String.class)
                 .doOnError(error -> log.warn("AI chat stream error", error));
-    }
-
-    public String search(String query, Integer k, String userId) {
-        try {
-            return client().get()
-                    .uri(uri -> uri.path("/v1/search")
-                            .queryParam("q", query == null ? "" : query)
-                            .queryParamIfPresent("k", Optional.ofNullable(k))
-                            .build())
-                    .header("X-User-Id", userId)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-        } catch (WebClientResponseException e) {
-            log.warn("AI search error [{}] body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
-            throw e;
-        }
     }
 
     // ---------- Quiz ----------
@@ -85,7 +53,7 @@ public class AIClient {
                     .bodyToMono(String.class)
                     .block();
         } catch (WebClientResponseException e) {
-            log.warn("AI keywords error [{}] body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            log.warn("AI keywords error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
             throw e;
         }
     }
@@ -103,7 +71,7 @@ public class AIClient {
                     .bodyToMono(String.class)
                     .block();
         } catch (WebClientResponseException e) {
-            log.warn("AI createQuiz error [{}] body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            log.warn("AI createQuiz error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
             throw e;
         }
     }
@@ -119,7 +87,7 @@ public class AIClient {
                     .bodyToMono(String.class)
                     .block();
         } catch (WebClientResponseException e) {
-            log.warn("AI submitAnswer error [{}] body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            log.warn("AI submitAnswer error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
             throw e;
         }
     }
@@ -133,7 +101,7 @@ public class AIClient {
                     .bodyToMono(String.class)
                     .block();
         } catch (WebClientResponseException e) {
-            log.warn("AI getResult error [{}] body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            log.warn("AI getResult error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
             throw e;
         }
     }
@@ -150,7 +118,7 @@ public class AIClient {
                     .bodyToMono(String.class)
                     .block();
         } catch (WebClientResponseException e) {
-            log.warn("AI moderation error [{}] body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
+            log.warn("AI moderation error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
             throw e;
         }
     }
@@ -165,5 +133,25 @@ public class AIClient {
 
     public String moderationGuardBatch(String rawJson, String userId) {
         return moderation("/guard-batch", rawJson, userId);
+    }
+
+    public String moderationCheck(String rawJson, String userId) {
+        return moderation("/check", rawJson, userId);
+    }
+
+    public String moderationGuardInput(String rawJson, String userId) {
+        return moderation("/guard-input", rawJson, userId);
+    }
+
+    public String moderationGuardOutput(String rawJson, String userId) {
+        return moderation("/guard-output", rawJson, userId);
+    }
+
+    public String moderationGuardPost(String rawJson, String userId) {
+        return moderation("/guard-post", rawJson, userId);
+    }
+
+    public String moderationGuardComment(String rawJson, String userId) {
+        return moderation("/guard-comment", rawJson, userId);
     }
 }

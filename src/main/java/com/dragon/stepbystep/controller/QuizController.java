@@ -1,127 +1,57 @@
 package com.dragon.stepbystep.controller;
 
-import com.dragon.stepbystep.common.ApiResponse;
-import com.dragon.stepbystep.dto.*;
-import com.dragon.stepbystep.service.QuizRewardService;
+
 import com.dragon.stepbystep.service.QuizService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
 
-import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/quiz")
 @RequiredArgsConstructor
 public class QuizController {
 
     private final QuizService quizService;
-    private final QuizRewardService quizRewardService;
 
-    // 추가!
-    private Long userId(Authentication auth) {
-        if (auth == null || auth.getName() == null) {
-            return 0L;
-        }
-        try {
-            return Long.parseLong(auth.getName());
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
+    /**
+     * 퀴즈 세트 생성 (AI 서버 호출)
+     */
+    @GetMapping
+    public ResponseEntity<?> createQuiz(
+            @RequestParam String mode,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "5") int n,
+            @RequestParam(defaultValue = "1") int userId
+    ) {
+        return ResponseEntity.ok(quizService.createQuizSet(mode, keyword, n, userId));
     }
 
-    // 0. 키워드 목록
+    /**
+     * 키워드 목록
+     */
     @GetMapping("/keywords")
-    public ResponseEntity<ApiResponse<List<String>>> getKeywords(
-            @RequestParam(value = "q", required = false) String query,
-            @RequestParam(value = "limit", required = false) Integer limit
+    public ResponseEntity<?> getKeywords(
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "50") int limit
     ) {
-        List<String> keywords = quizService.getKeywords(query, limit);
-        return ResponseEntity.ok(ApiResponse.success("퀴즈 키워드 조회 성공!", keywords));
+        return ResponseEntity.ok(quizService.getKeywords(q, limit));
     }
 
-    // 1. 퀴즈 생성 (POST)
-    @PostMapping("/generate")
-    public ResponseEntity<ApiResponse<QuizGetResponseDto>> generate(
-            @RequestBody QuizGenerateRequestDto body,
-            Authentication auth
-    ) {
-        QuizGetResponseDto response = quizService.generateQuiz(
-                body.getKeyword(),
-                body.getCount(),
-                userId(auth)
-        );
-
-        return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공!", response));
-    }
-
-    // 1-1. 퀴즈 생성 (GET - 프론트 호환)
-    @GetMapping("/generate")
-    public ResponseEntity<ApiResponse<QuizGetResponseDto>> generateUsingQuery(
-            @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "count", required = false) Integer count,
-            @RequestParam(value = "size", required = false) Integer size,
-            Authentication auth
-    ) {
-        Integer requestedCount = count != null ? count : size;
-        QuizGetResponseDto response = quizService.generateQuiz(keyword, requestedCount, userId(auth));
-        return ResponseEntity.ok(ApiResponse.success("퀴즈 생성 성공!", response));
-    }
-
-    // 2. 답안 제출
+    /**
+     * 답안 제출
+     */
     @PostMapping("/answer")
-    public ResponseEntity<SubmitAnswerResponseDto> submitAnswer(
-            @RequestBody SubmitAnswerRequestDto request
-    ) {
-        log.info("답안 제출: quizId={}, itemId={}, choiceIndex={}",
-                request.getQuizId(), request.getItemId(), request.getChoiceIndex());
-
-        try {
-            SubmitAnswerResponseDto response = quizService.submitAnswer(request);
-            log.info(" 답안 제출 성공");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error(" 답안 제출 실패", e);
-            return ResponseEntity.status(500).build();
-        }
+    public ResponseEntity<?> submitAnswer(@RequestBody Map<String, Object> request) {
+        return ResponseEntity.ok(quizService.submitAnswer(request));
     }
 
-    // 3. 결과 조회
+    /**
+     * 결과 조회
+     */
     @GetMapping("/results/{resultId}")
-    public ResponseEntity<QuizResultResponseDto> getResult(
-            @PathVariable String resultId
-    ) {
-        log.info("결과 조회: resultId={}", resultId);
-
-        try {
-            Long attemptId = Long.parseLong(resultId);
-            QuizResultResponseDto response = quizService.getResult(attemptId);
-            log.info("결과 조회 성공");
-            return ResponseEntity.ok(response);
-        } catch (NumberFormatException e) {
-            log.error(" 잘못된 resultId 형식: {}", resultId);
-            return ResponseEntity.status(400).build();
-        } catch (Exception e) {
-            log.error(" 결과 조회 실패", e);
-            return ResponseEntity.status(500).build();
-        }
-    }
-
-    // 4. 사용자 퀴즈 히스토리 조회
-    @GetMapping("/history")
-    public ResponseEntity<?> getHistory(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId
-    ) {
-        if (userId == null) {
-            userId = 1L;
-        }
-
-        log.info("퀴즈 히스토리 조회: userId={}", userId);
-
-        return ResponseEntity.ok().body(Map.of("message", "구현 예정"));
+    public ResponseEntity<?> getResults(@PathVariable String resultId) {
+        return ResponseEntity.ok(quizService.getResults(resultId));
     }
 }

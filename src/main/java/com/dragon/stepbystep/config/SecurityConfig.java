@@ -19,7 +19,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.io.IOException;
 import java.util.List;
 
 @Configuration
@@ -40,45 +39,43 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
             throws Exception {
-                http
-                        // CORS/CSRF 세션
-                        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                        .csrf(csrf -> csrf.disable())
-                        .sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        http
+                // CORS/CSRF 세션
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                        // 인증 실패 처리 (401 JSON)
-                        .exceptionHandling(e -> e.authenticationEntryPoint(restAuthenticationEntryPoint()))
+                // 인증 실패 처리 (401 JSON)
+                .exceptionHandling(e -> e.authenticationEntryPoint(restAuthenticationEntryPoint()))
 
-                        // 권한 규칙
-                        .authorizeHttpRequests(reg -> reg
+                // 권한 규칙
+                .authorizeHttpRequests(reg -> reg
 
-                                // 인증 없이 접근 가능한 공개 경로 (데모용)
-                                .requestMatchers(
-                                        "/api/healthz",
-                                        "/api/chat/**", // 데모동안 공개
-                                        "/api/quiz/**", // 데모동안 공개
-                                        "/api/ai/**",   // AI 연동 엔드포인트 (웹/모바일 공용)
-                                        "/api/moderation/**", // AI 모더레이션 프록시
-                                        "/api/auth/register",
-                                        "/api/auth/login",
-                                        "/api/auth/refresh",
-                                        "/api/auth/find-email",
-                                        "/api/auth/find-password"
-                                ).permitAll()
+                        // 인증 없이 접근 가능한 공개 경로 (데모용)
+                        .requestMatchers(
+                                "/api/healthz",
+                                "/api/chat/**",  // ✅ 챗봇 API 공개
+                                "/api/quiz/**",  // ✅ 퀴즈 API 공개
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/refresh",
+                                "/api/auth/find-email",
+                                "/api/auth/find-password"
+                        ).permitAll()
 
-                                // 게시판: 조회(GET)는 공개, 쓰기/수정/삭제는 인증 필요
-                                .requestMatchers(HttpMethod.GET, "/api/board/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/board/**").authenticated()
-                                .requestMatchers(HttpMethod.PATCH, "/api/board/**").authenticated()
-                                .requestMatchers(HttpMethod.DELETE, "/api/board/**").authenticated()
+                        // 게시판: 조회(GET)는 공개, 쓰기/수정/삭제는 인증 필요
+                        .requestMatchers(HttpMethod.GET, "/api/board/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/board/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/board/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/board/**").authenticated()
 
-                                // Preflight
-                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Preflight
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                                // 그 외는 인증 필요
-                                .anyRequest().authenticated()
-                        )
-                        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        // 그 외는 인증 필요
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -86,14 +83,13 @@ public class SecurityConfig {
     // 401을 JSON으로 깔끔하게 내려주는 엔트리포인트
     @Bean
     public AuthenticationEntryPoint restAuthenticationEntryPoint() {
-        return (request, response, authException) -> writeJson401(response, "인증이 필요합니다.");
-    }
-    private void writeJson401(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write("""
-        {"status":"error","message":"%s","data":null}
-        """.formatted(message));
+        return (request, response, authException) -> {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("""
+            {"status":"error","message":"인증이 필요합니다.","data":null}
+            """);
+        };
     }
 
     @Bean
