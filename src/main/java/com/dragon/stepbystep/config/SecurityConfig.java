@@ -40,22 +40,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
             throws Exception {
         http
-                // CORS/CSRF 세션
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // 인증 실패 처리 (401 JSON)
                 .exceptionHandling(e -> e.authenticationEntryPoint(restAuthenticationEntryPoint()))
 
-                // 권한 규칙
                 .authorizeHttpRequests(reg -> reg
-
-                        // 인증 없이 접근 가능한 공개 경로 (데모용)
                         .requestMatchers(
                                 "/api/healthz",
-                                "/api/chat/**",  // ✅ 챗봇 API 공개
-                                "/api/quiz/**",  // ✅ 퀴즈 API 공개
+                                "/api/chat/**",
+                                "/api/quiz/**",
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
@@ -63,18 +57,16 @@ public class SecurityConfig {
                                 "/api/auth/find-password"
                         ).permitAll()
 
-                        // 게시판: 조회(GET)는 공개, 쓰기/수정/삭제는 인증 필요
                         .requestMatchers(HttpMethod.GET, "/api/board/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/board/**").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/board/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/board/**").authenticated()
-
-                        // Preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 그 외는 인증 필요
+                        // ⚠️ anyRequest는 맨 마지막!
                         .anyRequest().authenticated()
                 )
+                // ✅ 필터는 authorizeHttpRequests 뒤에!
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
