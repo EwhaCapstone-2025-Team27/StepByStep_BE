@@ -38,8 +38,14 @@ public class QuizAttempt {
     @Builder.Default
     private AttemptStatus status = AttemptStatus.IN_PROGRESS;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mode", nullable = false)
+    @Builder.Default
+    private QuizMode mode = QuizMode.KEYWORD;
+
     @Column(name = "score_total")
-    private Integer scoreTotal;  // 맞힌 개수
+    @Builder.Default
+    private Integer scoreTotal = 0;  // 맞힌 개수
 
     @Column(name = "score_max")
     private Integer scoreMax;    // 전체 개수
@@ -50,5 +56,9 @@ public class QuizAttempt {
 
     public enum AttemptStatus {
         IN_PROGRESS, SUBMITTED, CANCELLED
+    }
+
+    public enum QuizMode {
+        KEYWORD, RANDOM
     }
 }
