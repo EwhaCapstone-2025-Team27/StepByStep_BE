@@ -1,177 +1,248 @@
 package com.dragon.stepbystep.service;
 
+import com.dragon.stepbystep.domain.QuizAttempt;
+import com.dragon.stepbystep.domain.QuizOption;
+import com.dragon.stepbystep.domain.QuizQuestion;
+import com.dragon.stepbystep.domain.QuizResponse;
+import com.dragon.stepbystep.domain.QuizScenario;
+import com.dragon.stepbystep.dto.*;
+import com.dragon.stepbystep.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.net.URI;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class QuizService {
 
-    @Value("${ai.base-url:http://127.0.0.1:8001}")
-    private String aiBaseUrl;
+    private static final int DEFAULT_QUESTION_COUNT = 2;
 
-    private final RestTemplate restTemplate;
+    private final QuizScenarioRepository scenarioRepository;
+    private final QuizQuestionRepository questionRepository;
+    private final QuizOptionRepository optionRepository;
+    private final QuizAttemptRepository attemptRepository;
+    private final QuizResponseRepository responseRepository;
 
-    /**
-     * 퀴즈 세트 생성
-     * - 실제 퀴즈 생성 + DB 저장은 전부 AI 서버(FastAPI)가 담당
-     * - BE는 단순히 HTTP 프록시 역할만 수행
-     */
-    public Map<String, Object> createQuizSet(String mode, String keyword, int n, int userId) {
+    @Transactional(readOnly = true)
+    public List<QuizScenarioDto> getKeywords() {
+        return scenarioRepository.findAll().stream()
+                .sorted(Comparator.comparingLong(QuizScenario::getId))
+                .map(s -> QuizScenarioDto.builder()
+                        .id(s.getId())
+                        .title(s.getTitle())
+                        .build())
+                .collect(Collectors.toList());
+    }
 
-        // 1) 파라미터 1차 검증 (AI 서버와 동일한 정책)
-        if (!"by_keyword".equals(mode) && !"random".equals(mode)) {
-            throw new IllegalArgumentException("mode must be by_keyword|random");
+    public QuizAttemptCreateResponseDto createAttempt(QuizAttemptCreateRequestDto request, Long userId) {
+        QuizAttempt.QuizMode mode = Optional.ofNullable(request.getMode()).orElse(QuizAttempt.QuizMode.KEYWORD);
+        int questionCount = Optional.ofNullable(request.getQuestionCount()).orElse(DEFAULT_QUESTION_COUNT);
+        if (questionCount < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "questionCount는 1 이상이어야 합니다.");
         }
-        if ("by_keyword".equals(mode) && (keyword == null || keyword.isBlank())) {
-            throw new IllegalArgumentException("keyword required for by_keyword mode");
-        }
-        if (n < 1 || n > 10) {
-            throw new IllegalArgumentException("n must be between 1 and 10");
+
+        QuizScenario scenario = selectScenario(mode, request.getScenarioId(), questionCount);
+        List<QuizQuestion> selectedQuestions = selectQuestions(scenario.getId(), questionCount);
+
+        QuizAttempt attempt = QuizAttempt.builder()
+                .userId(userId == null ? 0L : userId)
+                .scenario(scenario)
+                .scoreMax(questionCount)
+                .mode(mode)
+                .build();
+        attemptRepository.save(attempt);
+
+        List<QuizQuestionResponseDto> questionDtos = new ArrayList<>();
+        int index = 1;
+        for (QuizQuestion question : selectedQuestions) {
+            List<QuizOptionResponseDto> options = optionRepository.findByQuestionIdOrderByLabel(question.getId()).stream()
+                    .map(opt -> QuizOptionResponseDto.builder()
+                            .optionId(opt.getId())
+                            .label(opt.getLabel())
+                            .text(opt.getText())
+                            .build())
+                    .collect(Collectors.toList());
+
+            questionDtos.add(QuizQuestionResponseDto.builder()
+                    .index(index++)
+                    .questionId(question.getId())
+                    .stem(question.getStem())
+                    .options(options)
+                    .build());
         }
 
-        try {
-            // 2) URL 조립: GET /api/quiz?mode=...&n=...&user_id=...&keyword=...
-            UriComponentsBuilder builder = UriComponentsBuilder
-                    .fromUriString(aiBaseUrl + "/api/quiz")
-                    .queryParam("mode", mode)
-                    .queryParam("n", n)
-                    .queryParam("user_id", userId);
+        return QuizAttemptCreateResponseDto.builder()
+                .attemptId(attempt.getId())
+                .scenario(QuizScenarioDto.builder()
+                        .id(scenario.getId())
+                        .title(scenario.getTitle())
+                        .build())
+                .questionCount(questionCount)
+                .questions(questionDtos)
+                .build();
+    }
 
-            if (keyword != null && !keyword.isBlank()) {
-                builder.queryParam("keyword", keyword);
+    public QuizAnswerSubmitResponseDto submitResponse(Long attemptId, QuizAnswerSubmitRequestDto request) {
+        QuizAttempt attempt = attemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attempt를 찾을 수 없습니다."));
+
+        if (attempt.getStatus() != QuizAttempt.AttemptStatus.IN_PROGRESS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 완료된 시도입니다.");
+        }
+
+        Long questionId = request.getQuestionId();
+        Long optionId = request.getOptionId();
+        if (questionId == null || optionId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "questionId와 optionId는 필수입니다.");
+        }
+
+        QuizQuestion question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "문항을 찾을 수 없습니다."));
+
+        if (!question.getScenario().getId().equals(attempt.getScenario().getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "시나리오에 속하지 않은 문항입니다.");
+        }
+
+        responseRepository.findByAttemptIdAndQuestionId(attemptId, questionId).ifPresent(r -> {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 응답한 문항입니다.");
+        });
+
+        QuizOption selectedOption = optionRepository.findById(optionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "선택한 보기를 찾을 수 없습니다."));
+
+        if (!selectedOption.getQuestion().getId().equals(questionId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선택한 보기가 문항에 속하지 않습니다.");
+        }
+
+        QuizOption correctOption = findCorrectOption(questionId);
+        boolean correct = correctOption.getId().equals(selectedOption.getId());
+        int scoreDelta = correct ? 1 : 0;
+        int totalScore = (attempt.getScoreTotal() == null ? 0 : attempt.getScoreTotal()) + scoreDelta;
+
+        QuizResponse response = QuizResponse.builder()
+                .attempt(attempt)
+                .question(question)
+                .option(selectedOption)
+                .isCorrect(correct)
+                .score(scoreDelta)
+                .build();
+        responseRepository.save(response);
+
+        attempt.setScoreTotal(totalScore);
+
+        int responseCount = responseRepository.findByAttemptId(attemptId).size();
+        boolean finished = responseCount >= Optional.ofNullable(attempt.getScoreMax()).orElse(DEFAULT_QUESTION_COUNT);
+        if (finished) {
+            attempt.setStatus(QuizAttempt.AttemptStatus.SUBMITTED);
+            attempt.setSubmittedAt(LocalDateTime.now());
+        }
+
+        return QuizAnswerSubmitResponseDto.builder()
+                .correct(correct)
+                .correctOptionId(correctOption.getId())
+                .explanation(question.getCorrectText())
+                .scoreDelta(scoreDelta)
+                .totalScore(totalScore)
+                .finished(finished)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public QuizAttemptResultResponseDto getAttemptResult(Long attemptId) {
+        QuizAttempt attempt = attemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attempt를 찾을 수 없습니다."));
+
+        List<QuizAttemptResponseItemDto> responseDtos = new ArrayList<>();
+
+        for (QuizResponse response : responseRepository.findByAttemptId(attemptId)) {
+            QuizQuestion question = response.getQuestion();
+            List<QuizOption> options = optionRepository.findByQuestionIdOrderByLabel(question.getId());
+            QuizOption correctOption = options.stream()
+                    .filter(opt -> Boolean.TRUE.equals(opt.getIsCorrect()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "정답 보기를 찾을 수 없습니다."));
+
+            responseDtos.add(QuizAttemptResponseItemDto.builder()
+                    .questionId(question.getId())
+                    .stem(question.getStem())
+                    .selectedOptionId(response.getOption().getId())
+                    .selectedOptionLabel(response.getOption().getLabel())
+                    .selectedOptionText(response.getOption().getText())
+                    .isCorrect(response.getIsCorrect())
+                    .correctOptionId(correctOption.getId())
+                    .correctOptionLabel(correctOption.getLabel())
+                    .correctOptionText(correctOption.getText())
+                    .explanation(question.getCorrectText())
+                    .build());
+        }
+
+        return QuizAttemptResultResponseDto.builder()
+                .attemptId(attempt.getId())
+                .scenario(QuizScenarioDto.builder()
+                        .id(attempt.getScenario().getId())
+                        .title(attempt.getScenario().getTitle())
+                        .build())
+                .mode(attempt.getMode())
+                .scoreTotal(attempt.getScoreTotal())
+                .scoreMax(attempt.getScoreMax())
+                .status(attempt.getStatus())
+                .startedAt(attempt.getStartedAt())
+                .submittedAt(attempt.getSubmittedAt())
+                .responses(responseDtos)
+                .build();
+    }
+
+    private QuizScenario selectScenario(QuizAttempt.QuizMode mode, Long scenarioId, int questionCount) {
+        if (mode == QuizAttempt.QuizMode.KEYWORD) {
+            if (scenarioId == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "scenarioId는 필수입니다.");
             }
+            QuizScenario scenario = scenarioRepository.findById(scenarioId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "시나리오를 찾을 수 없습니다."));
+            validateQuestionCount(scenario.getId(), questionCount);
+            return scenario;
+        }
 
-            URI uri = builder.build(true).toUri(); // true: 인코딩 유지
+        List<QuizScenario> candidates = scenarioRepository.findAll();
+        List<QuizScenario> valid = candidates.stream()
+                .filter(s -> questionRepository.countByScenarioId(s.getId()) >= questionCount)
+                .collect(Collectors.toList());
+        if (valid.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "충분한 문제가 있는 시나리오가 없습니다.");
+        }
+        Collections.shuffle(valid);
+        return valid.get(0);
+    }
 
-            log.info("[QuizService] 요청 → AI 서버 create_quiz: {}", uri);
-
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                    uri,
-                    HttpMethod.GET,
-                    null,
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
-            );
-
-            log.info("[QuizService] 퀴즈 생성 완료 (AI 응답 status={}): {}",
-                    response.getStatusCode(), response.getBody());
-
-            return response.getBody();
-        } catch (HttpStatusCodeException e) {
-            // AI 서버가 던진 HTTP 에러를 조금 더 보기 좋게 래핑
-            log.error("[QuizService] 퀴즈 생성 실패 - status={}, body={}",
-                    e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("AI 퀴즈 생성 실패: " + e.getStatusCode(), e);
-        } catch (Exception e) {
-            log.error("[QuizService] 퀴즈 생성 중 예외 발생", e);
-            throw new RuntimeException("퀴즈 생성 중 오류 발생", e);
+    private void validateQuestionCount(Long scenarioId, int questionCount) {
+        long count = questionRepository.countByScenarioId(scenarioId);
+        if (count < questionCount) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "요청한 개수의 문제를 제공할 수 없습니다.");
         }
     }
 
-    /**
-     * 키워드 추천 조회
-     * - GET /api/quiz/keywords?q=...&limit=...
-     */
-    public Map<String, Object> getKeywords(String q, int limit) {
-        try {
-            UriComponentsBuilder builder = UriComponentsBuilder
-                    .fromUriString(aiBaseUrl + "/api/quiz/keywords")
-                    .queryParam("limit", limit);
-
-            if (q != null && !q.isBlank()) {
-                builder.queryParam("q", q);
-            }
-
-            URI uri = builder.build(true).toUri();
-
-            log.info("[QuizService] 요청 → AI 서버 keywords: {}", uri);
-
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                    uri,
-                    HttpMethod.GET,
-                    null,
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
-            );
-
-            return response.getBody();
-        } catch (HttpStatusCodeException e) {
-            log.error("[QuizService] 키워드 조회 실패 - status={}, body={}",
-                    e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("AI 키워드 조회 실패: " + e.getStatusCode(), e);
-        } catch (Exception e) {
-            log.error("[QuizService] 키워드 조회 중 예외 발생", e);
-            throw new RuntimeException("키워드 조회 중 오류 발생", e);
+    private List<QuizQuestion> selectQuestions(Long scenarioId, int questionCount) {
+        List<QuizQuestion> questions = new ArrayList<>(questionRepository.findByScenarioIdOrderByIdAsc(scenarioId));
+        if (questions.size() < questionCount) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "요청한 개수의 문제를 제공할 수 없습니다.");
         }
+        Collections.shuffle(questions);
+        return questions.subList(0, questionCount);
     }
 
-    /**
-     * 답안 제출
-     * - POST /api/quiz/answer
-     * - request Body는 그대로 AI에게 전달하고, 응답도 그대로 FE에 전달
-     */
-    public Map<String, Object> submitAnswer(Map<String, Object> request) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
-
-            String url = aiBaseUrl + "/api/quiz/answer";
-            log.info("[QuizService] 요청 → AI 서버 submitAnswer: {}", url);
-
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.POST,
-                    entity,
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
-            );
-
-            return response.getBody();
-        } catch (HttpStatusCodeException e) {
-            log.error("[QuizService] 답안 제출 실패 - status={}, body={}",
-                    e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("AI 답안 제출 실패: " + e.getStatusCode(), e);
-        } catch (Exception e) {
-            log.error("[QuizService] 답안 제출 중 예외 발생", e);
-            throw new RuntimeException("답안 제출 중 오류 발생", e);
-        }
-    }
-
-    /**
-     * 퀴즈 결과 조회
-     * - GET /api/quiz/results/{resultId}
-     */
-    public Map<String, Object> getResults(String resultId) {
-        try {
-            String url = aiBaseUrl + "/api/quiz/results/" + resultId;
-            log.info("[QuizService] 요청 → AI 서버 결과 조회: {}", url);
-
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    null,
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
-            );
-
-            return response.getBody();
-        } catch (HttpStatusCodeException e) {
-            log.error("[QuizService] 결과 조회 실패 - status={}, body={}",
-                    e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("AI 결과 조회 실패: " + e.getStatusCode(), e);
-        } catch (Exception e) {
-            log.error("[QuizService] 결과 조회 중 예외 발생", e);
-            throw new RuntimeException("결과 조회 중 오류 발생", e);
-        }
+    private QuizOption findCorrectOption(Long questionId) {
+        return optionRepository.findByQuestionIdOrderByLabel(questionId).stream()
+                .filter(opt -> Boolean.TRUE.equals(opt.getIsCorrect()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "정답 보기를 찾을 수 없습니다."));
     }
 }

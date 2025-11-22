@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface QuizQuestionRepository extends JpaRepository<QuizQuestion, Long> {
     List<QuizQuestion> findByScenarioIdOrderByIdAsc(Long scenarioId);
+
+    long countByScenarioId(Long scenarioId);
 }
