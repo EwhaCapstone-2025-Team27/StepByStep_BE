@@ -106,6 +106,7 @@ public class BadgeService {
         }
 
         user.decreasePoints(price);
+        userRepository.save(user);
 
         UserBadge userBadge = userBadgeRepository.save(
                 UserBadge.builder()
