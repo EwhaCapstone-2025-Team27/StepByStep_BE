@@ -67,6 +67,13 @@ public class BadgeService {
                 ? Set.of()
                 : new HashSet<>(userBadgeRepository.findBadgeIdsByUserId(userId));
 
+        Integer myPoint = null;
+        if (userId != null) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(UserNotFoundException::new);
+            myPoint = user.getPoints();
+        }
+
         List<BadgeResponseDto> items = badges.stream()
                 .map(badge -> BadgeResponseDto.from(
                         badge,
@@ -74,7 +81,7 @@ public class BadgeService {
                 ))
                 .toList();
 
-        return new BadgeListResponseDto(items, new CursorPagingDto(nextCursor, hasNext));
+        return new BadgeListResponseDto(items, new CursorPagingDto(nextCursor, hasNext), myPoint);
     }
 
     @Transactional
