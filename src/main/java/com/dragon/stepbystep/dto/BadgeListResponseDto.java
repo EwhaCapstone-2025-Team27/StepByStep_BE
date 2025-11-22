@@ -12,4 +12,5 @@ import java.util.List;
 public class BadgeListResponseDto {
     private List<BadgeResponseDto> badges;
     private CursorPagingDto paging;
+    private Integer myPoint;
 }
