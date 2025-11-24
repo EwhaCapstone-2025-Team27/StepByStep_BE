@@ -25,12 +25,6 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-//    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-//
-//    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-//        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-//    }
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -40,10 +34,21 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
             throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // ✨ CSRF 비활성화 (JWT 사용하므로 불필요)
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(e -> e.authenticationEntryPoint(restAuthenticationEntryPoint()))
+
+                // ✨ 세션 비활성화 (중복 인증 방지)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // ✨ CORS 설정
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // ✨ 인증 실패 핸들러
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(restAuthenticationEntryPoint())
+                )
 
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(
@@ -63,10 +68,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/board/**").authenticated()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // ⚠️ anyRequest는 맨 마지막!
                         .anyRequest().authenticated()
                 )
-                // ✅ 필터는 authorizeHttpRequests 뒤에!
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -106,5 +109,4 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", cfg);
         return source;
     }
-
 }
