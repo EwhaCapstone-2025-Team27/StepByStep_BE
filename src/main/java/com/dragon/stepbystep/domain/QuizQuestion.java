@@ -22,7 +22,7 @@ public class QuizQuestion {
     @Column(name = "stem", nullable = false, columnDefinition = "TEXT")
     private String stem;  // 질문 본문
 
-    @Column(name = "correct_text", columnDefinition = "TEXT")
+    @Column(name = "correct_text", columnDefinition = "LONGTEXT")
     private String correctText;  // 해설
 
     @ManyToOne(fetch = FetchType.LAZY)
