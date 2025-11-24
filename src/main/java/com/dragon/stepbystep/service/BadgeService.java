@@ -106,6 +106,7 @@ public class BadgeService {
         }
 
         user.decreasePoints(price);
+        userRepository.save(user);
 
         UserBadge userBadge = userBadgeRepository.save(
                 UserBadge.builder()
@@ -115,6 +116,12 @@ public class BadgeService {
                         .build()
         );
 
+        saveBadgePurchaseHistory(user, badge, price);
+
+        return BadgePurchaseResponseDto.of(userBadge, before, price, user.getPoints());
+    }
+
+    private void saveBadgePurchaseHistory(User user, Badge badge, int price) {
         pointHistoryRepository.save(
                 PointHistory.builder()
                         .user(user)
@@ -124,8 +131,6 @@ public class BadgeService {
                         .balanceAfter(user.getPoints())
                         .build()
         );
-
-        return BadgePurchaseResponseDto.of(userBadge, before, price, user.getPoints());
     }
 
     private int normalizeLimit(Integer limitParam) {

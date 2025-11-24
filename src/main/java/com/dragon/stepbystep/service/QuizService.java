@@ -31,6 +31,7 @@ public class QuizService {
     private final QuizOptionRepository optionRepository;
     private final QuizAttemptRepository attemptRepository;
     private final QuizResponseRepository responseRepository;
+    private final PointRewardService pointRewardService;
 
     @Transactional(readOnly = true)
     public List<QuizScenarioDto> getKeywords() {
@@ -45,10 +46,7 @@ public class QuizService {
 
     public QuizAttemptCreateResponseDto createAttempt(QuizAttemptCreateRequestDto request, Long userId) {
         QuizAttempt.QuizMode mode = Optional.ofNullable(request.getMode()).orElse(QuizAttempt.QuizMode.KEYWORD);
-        int questionCount = Optional.ofNullable(request.getQuestionCount()).orElse(DEFAULT_QUESTION_COUNT);
-        if (questionCount < 1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "questionCount는 1 이상이어야 합니다.");
-        }
+        int questionCount = DEFAULT_QUESTION_COUNT; // 한 세트는 2문제 고정
 
         QuizScenario scenario = selectScenario(mode, request.getScenarioId(), questionCount);
         List<QuizQuestion> selectedQuestions = selectQuestions(scenario.getId(), questionCount);
@@ -144,6 +142,7 @@ public class QuizService {
         if (finished) {
             attempt.setStatus(QuizAttempt.AttemptStatus.SUBMITTED);
             attempt.setSubmittedAt(LocalDateTime.now());
+            pointRewardService.rewardForQuizCorrectAnswers(attempt.getUserId(), totalScore);
         }
 
         return QuizAnswerSubmitResponseDto.builder()
