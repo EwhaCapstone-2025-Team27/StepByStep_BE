@@ -8,5 +8,7 @@ import java.util.List;
 
 @Repository
 public interface QuizQuestionRepository extends JpaRepository<QuizQuestion, Long> {
-    List<QuizQuestion> findByScenarioId(Long scenarioId);
+    List<QuizQuestion> findByScenarioIdOrderByIdAsc(Long scenarioId);
+
+    long countByScenarioId(Long scenarioId);
 }

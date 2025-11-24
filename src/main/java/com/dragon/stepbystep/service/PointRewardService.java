@@ -17,7 +17,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class PointRewardService {
 
-    public static final int BASE_REWARD_POINT = 5;
+    public static final int BASE_REWARD_POINT = 10;
 
     private final UserRepository userRepository;
     private final PointHistoryRepository pointHistoryRepository;

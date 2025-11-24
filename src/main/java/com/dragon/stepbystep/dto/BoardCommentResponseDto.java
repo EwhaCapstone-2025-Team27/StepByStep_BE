@@ -14,19 +14,22 @@ public class BoardCommentResponseDto {
     private final Long postId;
     private final String content;
     private final LocalDateTime createdAt;
+    private final boolean isMine;
 
     public static BoardCommentResponseDto from(BoardComment comment) {
+        return from(comment, null);
+    }
+
+    public static BoardCommentResponseDto from(BoardComment comment, Long currentUserId) {
+        boolean mine = currentUserId != null && comment.isAuthor(currentUserId);
+
         return BoardCommentResponseDto.builder()
                 .id(comment.getId())
                 .nickname(comment.getAuthorNickname())
                 .postId(comment.getBoard().getId())
                 .content(comment.getContent())
-                .createdAt(resolveTimestamp(comment))
+                .createdAt(comment.getCreatedAt())
+                .isMine(mine)
                 .build();
-    }
-
-    private static LocalDateTime resolveTimestamp(BoardComment comment) {
-        LocalDateTime updatedAt = comment.getUpdatedAt();
-        return updatedAt != null ? updatedAt : comment.getCreatedAt();
     }
 }

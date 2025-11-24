@@ -23,13 +23,15 @@ public class BadgeController {
     @GetMapping
     public ResponseEntity<ApiResponse<BadgeListResponseDto>> getBadges(
             @RequestParam(value = "limit", required = false) Integer limit,
-            @RequestParam(value = "cursor", required = false) String cursor
+            @RequestParam(value = "cursor", required = false) String cursor,
+            Principal principal
     ) {
-        BadgeListResponseDto response = badgeService.getBadges(limit, cursor);
+        Long userId = principal != null ? Long.valueOf(principal.getName()) : null;
+        BadgeListResponseDto response = badgeService.getBadges(limit, cursor, userId);
         return ResponseEntity.ok(ApiResponse.success("배지 목록 조회 성공!", response));
     }
 
-    @PostMapping("/purchase")
+    @PostMapping("/{badgeId}/purchase")
     public ResponseEntity<ApiResponse<BadgePurchaseResponseDto>> purchaseBadge(
             Principal principal,
             @Valid @RequestBody BadgePurchaseRequestDto requestDto

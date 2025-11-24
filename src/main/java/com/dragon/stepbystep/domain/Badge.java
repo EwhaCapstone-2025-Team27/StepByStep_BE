@@ -29,8 +29,8 @@ public class Badge {
     @Column(nullable = false)
     private Integer price;
 
-    @Column(nullable = false)
-    private Boolean isActive;
+//    @Column(nullable = false)
+//    private Boolean isActive;
 
     @Column(nullable = false, updatable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)")
     private LocalDateTime createdAt;
@@ -38,12 +38,12 @@ public class Badge {
     @Column(nullable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)")
     private LocalDateTime updatedAt;
 
-    public void updateBadge(String name, String emoji, String description, Integer price, Boolean isActive) {
+    public void updateBadge(String name, String emoji, String description, Integer price) {
         this.name = name;
         this.emoji = emoji;
         this.description = description;
         this.price = price;
-        this.isActive = isActive;
+        //this.isActive = isActive;
     }
 
     @PrePersist

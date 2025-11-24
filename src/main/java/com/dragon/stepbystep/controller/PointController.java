@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.security.Principal;
 
 @RestController
-@RequestMapping("/api/points")
+@RequestMapping("/api/points/me")
 @RequiredArgsConstructor
 public class PointController {
 
@@ -27,7 +27,7 @@ public class PointController {
         return ResponseEntity.ok(ApiResponse.success("내 포인트 조회 성공!", response));
     }
 
-    @GetMapping("/histories")
+    @GetMapping("/history")
     public ResponseEntity<ApiResponse<PointHistoryListResponseDto>> getPointHistories(
             Principal principal,
             @RequestParam(value = "limit", required = false) Integer limit,

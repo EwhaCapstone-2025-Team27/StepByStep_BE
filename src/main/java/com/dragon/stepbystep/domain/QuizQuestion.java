@@ -1,3 +1,4 @@
+// src/main/java/com/dragon/stepbystep/domain/QuizQuestion.java
 package com.dragon.stepbystep.domain;
 
 import jakarta.persistence.*;

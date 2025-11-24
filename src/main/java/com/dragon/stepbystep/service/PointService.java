@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -58,8 +59,8 @@ public class PointService {
 
         String nextCursor = null;
         if (hasNext && !histories.isEmpty()) {
-            Long lastId = histories.get(histories.size() - 1).getId();
-            nextCursor = CursorUtils.encode(new PointHistoryCursor(lastId));
+            PointHistory lastHistory = histories.get(histories.size() - 1);
+            nextCursor = CursorUtils.encode(new PointHistoryCursor(lastHistory.getId(), lastHistory.getCreatedAt()));
         }
 
         List<PointHistoryItemDto> items = histories.stream()
@@ -82,6 +83,7 @@ public class PointService {
         return Math.min(limit, MAX_LIMIT);
     }
 
-    private record PointHistoryCursor(Long lastId) {
+    private record PointHistoryCursor(Long lastId, LocalDateTime lastCreatedAt) {
+
     }
 }

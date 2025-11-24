@@ -7,6 +7,7 @@ import com.dragon.stepbystep.exception.DuplicateEmailException;
 import com.dragon.stepbystep.exception.DuplicateNicknameException;
 import com.dragon.stepbystep.exception.UserDeletedException;
 import com.dragon.stepbystep.exception.UserNotFoundException;
+import com.dragon.stepbystep.repository.UserBadgeRepository;
 import com.dragon.stepbystep.repository.UserRepository;
 import com.dragon.stepbystep.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +31,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final MailService mailService;
+    private final UserBadgeRepository userBadgeRepository;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -85,7 +88,7 @@ public class UserService {
             throw new UserNotFoundException();
         }
 
-        return UserResponseDto.fromEntity(user);
+        return UserResponseDto.fromEntity(user, getUserBadges(id));
     }
 
     // 사용자 정보 수정(닉네임, 성별, 출생년도)
@@ -131,7 +134,7 @@ public class UserService {
         }
 
         User updated = userRepository.save(target);
-        return UserResponseDto.fromEntity(updated);
+        return UserResponseDto.fromEntity(updated, getUserBadges(id));
     }
 
     // 비밀번호 변경
@@ -224,6 +227,13 @@ public class UserService {
         }
 
         return builder.toString();
+    }
+
+    private List<UserBadgeResponseDto> getUserBadges(Long userId) {
+        return userBadgeRepository.findWithBadgeByUserId(userId)
+                .stream()
+                .map(UserBadgeResponseDto::from)
+                .toList();
     }
 
     // 로그인

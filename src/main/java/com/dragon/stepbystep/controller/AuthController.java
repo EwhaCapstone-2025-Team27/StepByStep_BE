@@ -35,8 +35,7 @@ public class AuthController {
         UserResponseDto response = userService.registerUser(dto);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("사용자 등록 성공!", response)
-                );
+                .body(ApiResponse.success("사용자 등록 성공!", response));
     }
 
     // 로그인
@@ -69,7 +68,7 @@ public class AuthController {
     }
 
     // 이메일 찾기
-    @PostMapping("find-email")
+    @PostMapping("/find-email")
     public ResponseEntity<ApiResponse<FindEmailResponseDto>> findEmail(@Valid @RequestBody FindEmailRequestDto dto) {
         return ResponseEntity.ok(ApiResponse.success("이메일 찾기 성공!", userService.findEmail(dto)));
     }

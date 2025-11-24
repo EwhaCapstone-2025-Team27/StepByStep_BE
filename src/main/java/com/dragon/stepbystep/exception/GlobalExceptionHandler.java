@@ -1,6 +1,7 @@
 package com.dragon.stepbystep.exception;
 
 import com.dragon.stepbystep.common.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -99,6 +100,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BoardNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleBoardNotFound(BoardNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(e.getMessage()));
+    }
+
+    @ExceptionHandler(BoardSearchResultNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBoardSearchResultNotFound(BoardSearchResultNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(e.getMessage()));
     }
@@ -210,9 +217,16 @@ public class GlobalExceptionHandler {
 
     // === 최종 안전망 ===
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleAny(Exception e) {
-        // 운영이라면 여기서 로깅: log.error("Unhandled exception", e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("서버 오류가 발생했습니다."));
+    public ResponseEntity<ApiResponse<Void>> handleAny(
+            Exception e,
+            HttpServletRequest request
+    ) {
+        // SSE 스트림인 경우 예외 처리 건너뛰기
+        String accept = request.getHeader("Accept");
+        if (accept != null && accept.contains("text/event-stream")) {
+            // SSE 스트림에서는 에러를 로그만 남기고 반환하지 않음
+            log.error("SSE 스트리밍 중 에러 발생: {}", e.getMessage());
+        }
+        return null;
     }
 }

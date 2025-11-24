@@ -40,7 +40,7 @@ public class BadgePurchaseResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BadgeInfo {
-        private Long badgeId;
+        private Long id;
         private String name;
         private String emoji;
         private String description;
