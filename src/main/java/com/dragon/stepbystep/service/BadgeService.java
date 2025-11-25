@@ -2,6 +2,7 @@ package com.dragon.stepbystep.service;
 
 import com.dragon.stepbystep.common.CursorUtils;
 import com.dragon.stepbystep.domain.Badge;
+import com.dragon.stepbystep.domain.BadgePurchaseHistory;
 import com.dragon.stepbystep.domain.PointHistory;
 import com.dragon.stepbystep.domain.User;
 import com.dragon.stepbystep.domain.UserBadge;
@@ -12,6 +13,7 @@ import com.dragon.stepbystep.exception.BadgeNotFoundException;
 import com.dragon.stepbystep.exception.InsufficientPointsException;
 import com.dragon.stepbystep.exception.UserNotFoundException;
 import com.dragon.stepbystep.repository.BadgeRepository;
+import com.dragon.stepbystep.repository.BadgePurchaseHistoryRepository;
 import com.dragon.stepbystep.repository.PointHistoryRepository;
 import com.dragon.stepbystep.repository.UserBadgeRepository;
 import com.dragon.stepbystep.repository.UserRepository;
@@ -38,6 +40,7 @@ public class BadgeService {
     private final BadgeRepository badgeRepository;
     private final UserRepository userRepository;
     private final UserBadgeRepository userBadgeRepository;
+    private final BadgePurchaseHistoryRepository badgePurchaseHistoryRepository;
     private final PointHistoryRepository pointHistoryRepository;
 
     public BadgeListResponseDto getBadges(Integer limitParam, String cursor, Long userId) {
@@ -84,7 +87,7 @@ public class BadgeService {
         return new BadgeListResponseDto(items, new CursorPagingDto(nextCursor, hasNext), myPoint);
     }
 
-    @Transactional
+    @Transactional(readOnly = false)
     public BadgePurchaseResponseDto purchaseBadge(Long userId, BadgePurchaseRequestDto requestDto) {
         if (requestDto == null || requestDto.id() == null) {
             throw new IllegalArgumentException("구매할 배지 ID는 필수입니다.");
@@ -116,12 +119,20 @@ public class BadgeService {
                         .build()
         );
 
-        saveBadgePurchaseHistory(user, badge, price);
+        recordBadgePurchaseHistory(user, badge, price);
 
         return BadgePurchaseResponseDto.of(userBadge, before, price, user.getPoints());
     }
 
-    private void saveBadgePurchaseHistory(User user, Badge badge, int price) {
+    private void recordBadgePurchaseHistory(User user, Badge badge, int price) {
+        badgePurchaseHistoryRepository.save(
+                BadgePurchaseHistory.builder()
+                        .user(user)
+                        .badge(badge)
+                        .priceAtPurchase(price)
+                        .build()
+        );
+
         pointHistoryRepository.save(
                 PointHistory.builder()
                         .user(user)
