@@ -230,10 +230,7 @@ public class UserService {
     }
 
     private List<UserBadgeResponseDto> getUserBadges(Long userId) {
-        return userBadgeRepository.findWithBadgeByUserId(userId)
-                .stream()
-                .map(UserBadgeResponseDto::from)
-                .toList();
+        return userBadgeRepository.findBadgeResponsesByUserId(userId);
     }
 
     // 로그인
