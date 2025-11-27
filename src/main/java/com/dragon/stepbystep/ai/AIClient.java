@@ -37,7 +37,7 @@ public class AIClient {
     private int maxInMemoryMb;
 
     private WebClient client() {
-        log.debug("🔧 AI 클라이언트 생성: {}", aiBaseUrl);
+        log.debug("AI 클라이언트 생성: {}", aiBaseUrl);
 
         // HTTP 클라이언트 최적화 설정
         HttpClient httpClient = HttpClient.create()
@@ -57,11 +57,11 @@ public class AIClient {
 
     // -------------------- Chat Stream (초고속 연결) --------------------
     public Flux<String> chatStream(String json, String userId) {
-        log.info("🔗 AI 서버 연결 시작: {}", aiBaseUrl);
+        log.info("AI 서버 연결 시작: {}", aiBaseUrl);
         long startTime = System.currentTimeMillis();
 
         return client().post()
-                .uri("/api/chat/stream") // 최종 경로: AI_BASE_URL + /api/chat/stream
+                .uri("/api/chat") // 최종 경로: AI_BASE_URL + /api/chat
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_EVENT_STREAM)
                 .header("X-User-Id", userId)
@@ -86,70 +86,70 @@ public class AIClient {
     }
 
     // ---------- Quiz ----------
-    public String quizKeywords(String q, Integer limit, String userId) {
-        try {
-            return client().get()
-                    .uri(uri -> uri.path("/api/quiz/keywords")
-                            .queryParamIfPresent("q", Optional.ofNullable(q).filter(s -> !s.isBlank()))
-                            .queryParamIfPresent("limit", Optional.ofNullable(limit))
-                            .build())
-                    .header("X-User-Id", userId)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-        } catch (WebClientResponseException e) {
-            log.warn("AI keywords error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
-            throw e;
-        }
-    }
-
-    public String createQuiz(String mode, String keyword, Integer n, String userId) {
-        try {
-            return client().get()
-                    .uri(uri -> uri.path("/api/quiz")
-                            .queryParam("mode", mode)
-                            .queryParamIfPresent("keyword", Optional.ofNullable(keyword).filter(s -> !s.isBlank()))
-                            .queryParamIfPresent("n", Optional.ofNullable(n))
-                            .build())
-                    .header("X-User-Id", userId)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-        } catch (WebClientResponseException e) {
-            log.warn("AI createQuiz error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
-            throw e;
-        }
-    }
-
-    public String submitAnswer(String rawJson, String userId) {
-        try {
-            return client().post()
-                    .uri("/api/quiz/answer")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .header("X-User-Id", userId)
-                    .bodyValue(rawJson)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-        } catch (WebClientResponseException e) {
-            log.warn("AI submitAnswer error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
-            throw e;
-        }
-    }
-
-    public String getResult(String resultId, String userId) {
-        try {
-            return client().get()
-                    .uri("/api/quiz/results/{id}", resultId)
-                    .header("X-User-Id", userId)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-        } catch (WebClientResponseException e) {
-            log.warn("AI getResult error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
-            throw e;
-        }
-    }
+//    public String quizKeywords(String q, Integer limit, String userId) {
+//        try {
+//            return client().get()
+//                    .uri(uri -> uri.path("/api/quiz/keywords")
+//                            .queryParamIfPresent("q", Optional.ofNullable(q).filter(s -> !s.isBlank()))
+//                            .queryParamIfPresent("limit", Optional.ofNullable(limit))
+//                            .build())
+//                    .header("X-User-Id", userId)
+//                    .retrieve()
+//                    .bodyToMono(String.class)
+//                    .block();
+//        } catch (WebClientResponseException e) {
+//            log.warn("AI keywords error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
+//            throw e;
+//        }
+//    }
+//
+//    public String createQuiz(String mode, String keyword, Integer n, String userId) {
+//        try {
+//            return client().get()
+//                    .uri(uri -> uri.path("/api/quiz")
+//                            .queryParam("mode", mode)
+//                            .queryParamIfPresent("keyword", Optional.ofNullable(keyword).filter(s -> !s.isBlank()))
+//                            .queryParamIfPresent("n", Optional.ofNullable(n))
+//                            .build())
+//                    .header("X-User-Id", userId)
+//                    .retrieve()
+//                    .bodyToMono(String.class)
+//                    .block();
+//        } catch (WebClientResponseException e) {
+//            log.warn("AI createQuiz error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
+//            throw e;
+//        }
+//    }
+//
+//    public String submitAnswer(String rawJson, String userId) {
+//        try {
+//            return client().post()
+//                    .uri("/api/quiz/answer")
+//                    .contentType(MediaType.APPLICATION_JSON)
+//                    .header("X-User-Id", userId)
+//                    .bodyValue(rawJson)
+//                    .retrieve()
+//                    .bodyToMono(String.class)
+//                    .block();
+//        } catch (WebClientResponseException e) {
+//            log.warn("AI submitAnswer error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
+//            throw e;
+//        }
+//    }
+//
+//    public String getResult(String resultId, String userId) {
+//        try {
+//            return client().get()
+//                    .uri("/api/quiz/results/{id}", resultId)
+//                    .header("X-User-Id", userId)
+//                    .retrieve()
+//                    .bodyToMono(String.class)
+//                    .block();
+//        } catch (WebClientResponseException e) {
+//            log.warn("AI getResult error [{}] body={}", e.getStatusCode().value(), e.getResponseBodyAsString());
+//            throw e;
+//        }
+//    }
 
     // ---------- Moderation ----------
     public String moderation(String path, String json, String userId) {

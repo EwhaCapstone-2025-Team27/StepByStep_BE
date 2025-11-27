@@ -52,14 +52,20 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(
-                                "/api/healthz",
-                                "/api/chat/**",
+                                "/health",
                                 "/api/quiz/**",
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
                                 "/api/auth/find-email",
                                 "/api/auth/find-password"
+                        ).permitAll()
+
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/moderation/guard-input",
+                                "/api/moderation/guard-output",
+                                "/api/moderation/filter-snippets",
+                                "/api/moderation/guard-batch"
                         ).permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/board/**").permitAll()
