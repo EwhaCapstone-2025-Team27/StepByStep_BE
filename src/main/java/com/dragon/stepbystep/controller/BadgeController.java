@@ -2,10 +2,8 @@ package com.dragon.stepbystep.controller;
 
 import com.dragon.stepbystep.common.ApiResponse;
 import com.dragon.stepbystep.dto.BadgeListResponseDto;
-import com.dragon.stepbystep.dto.BadgePurchaseRequestDto;
 import com.dragon.stepbystep.dto.BadgePurchaseResponseDto;
 import com.dragon.stepbystep.service.BadgeService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,10 +32,10 @@ public class BadgeController {
     @PostMapping("/{badgeId}/purchase")
     public ResponseEntity<ApiResponse<BadgePurchaseResponseDto>> purchaseBadge(
             Principal principal,
-            @Valid @RequestBody BadgePurchaseRequestDto requestDto
+            @PathVariable Long badgeId
     ) {
         Long userId = Long.valueOf(principal.getName());
-        BadgePurchaseResponseDto response = badgeService.purchaseBadge(userId, requestDto);
+        BadgePurchaseResponseDto response = badgeService.purchaseBadge(userId, badgeId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success("배지 구매 성공!", response));
     }

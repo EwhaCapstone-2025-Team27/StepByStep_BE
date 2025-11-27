@@ -16,6 +16,7 @@ public class UserBadgeResponseDto {
     private String emoji;
     private String description;
     private Integer price;
+    private boolean owned;
     private LocalDateTime purchasedAt;
 
     public static UserBadgeResponseDto from(UserBadge userBadge) {
@@ -25,6 +26,7 @@ public class UserBadgeResponseDto {
                 userBadge.getBadge().getEmoji(),
                 userBadge.getBadge().getDescription(),
                 userBadge.getPriceAtPurchase(),
+                true,
                 userBadge.getPurchasedAt()
         );
     }

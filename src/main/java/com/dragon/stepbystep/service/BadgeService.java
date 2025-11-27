@@ -88,17 +88,17 @@ public class BadgeService {
     }
 
     @Transactional(readOnly = false)
-    public BadgePurchaseResponseDto purchaseBadge(Long userId, BadgePurchaseRequestDto requestDto) {
-        if (requestDto == null || requestDto.id() == null) {
+    public BadgePurchaseResponseDto purchaseBadge(Long userId, Long badgeId) {
+        if (badgeId == null) {
             throw new IllegalArgumentException("구매할 배지 ID는 필수입니다.");
         }
 
-        Badge badge = badgeRepository.findById(requestDto.id())
+        Badge badge = badgeRepository.findById(badgeId)
                 .orElseThrow(BadgeNotFoundException::new);
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
-        if (userBadgeRepository.existsByUserIdAndBadgeId(userId, badge.getId())) {
+        if (userBadgeRepository.existsByUser_IdAndBadge_Id(userId, badge.getId())) {
             throw new BadgeAlreadyOwnedException();
         }
 

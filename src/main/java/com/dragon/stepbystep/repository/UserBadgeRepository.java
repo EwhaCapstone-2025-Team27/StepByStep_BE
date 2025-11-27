@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface UserBadgeRepository extends JpaRepository<UserBadge, Long> {
-    boolean existsByUserIdAndBadgeId(Long userId, Long badgeId);
+    boolean existsByUser_IdAndBadge_Id(Long userId, Long badgeId);
 
     @Query("select ub.badge.id from UserBadge ub where ub.user.id = :userId")
     List<Long> findBadgeIdsByUserId(@Param("userId") Long userId);
@@ -21,6 +21,7 @@ public interface UserBadgeRepository extends JpaRepository<UserBadge, Long> {
                 ub.badge.emoji,
                 ub.badge.description,
                 ub.priceAtPurchase,
+                true,
                 ub.createdAt
             )
             from UserBadge ub
