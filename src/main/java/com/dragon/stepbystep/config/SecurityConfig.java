@@ -102,14 +102,16 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
 
-        // RN 앱은 CORS 영향이 거의 없지만, 웹/도메인 데모를 고려해 와일드카드 허용
-        cfg.setAllowedOriginPatterns(List.of("*"));
-        cfg.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
+        cfg.setAllowedOrigins(List.of(
+                "https://seongkeum.com",
+                "https://api.seongkeum.com",
+                "http://localhost:3000"
+        ));
+        cfg.setAllowedMethods(List.of("*"));
         cfg.setAllowedHeaders(List.of("*"));
         cfg.setExposedHeaders(List.of("Authorization"));
 
-        // Bearer 헤더로 인증하므로 쿠키 불필요 → false
-        cfg.setAllowCredentials(false);
+        cfg.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
