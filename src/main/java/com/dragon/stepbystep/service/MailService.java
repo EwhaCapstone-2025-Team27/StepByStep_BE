@@ -15,10 +15,10 @@ public class MailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.mail.from:no-reply@stepbystep.com}")
+    @Value("${MAIL_FROM}")
     private String fromAddress;
 
-    @Value("${app.mail.temp-password-subject:성큼성큼 임시 비밀번호 안내}")
+    @Value("${MAIL_TEMP_PASSWORD_SUBJECT}")
     private String temporaryPasswordSubject;
 
     public void sendTemporaryPasswordEmail(String to, String temporaryPassword, long expirationMinutes) {
