@@ -142,7 +142,6 @@ public class QuizService {
         if (finished) {
             attempt.setStatus(QuizAttempt.AttemptStatus.SUBMITTED);
             attempt.setSubmittedAt(LocalDateTime.now());
-            pointRewardService.rewardForQuizCorrectAnswers(attempt.getUserId(), totalScore);
 
             Long userId = attempt.getUserId();
             if (userId != null && userId > 0 && totalScore > 0) {
