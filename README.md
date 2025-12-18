@@ -58,31 +58,20 @@ StepByStep_BE/
 
 ---
 
-## 3. How to Build
+## 3. How to Install
 
+1. 깃허브 Repository 클론
 ```bash
-git clone "git@github.com:EwhaCapstone-2025-Team27/StepByStep_BE.git"
+git clone
+```
+
+2. BE 폴더로 이동
+```bash
 cd StepByStep_BE
-./gradlew clean build
 ```
 
-빌드 결과:
+3. 프로젝트 최상위 디렉토리에 .env 파일 생성
 ```bash
-build/libs/stepbystep-0.0.1-SNAPSHOT.jar
-```
-
----
-
-## 4. How to Install
-
-### 4.1 Requirements
-- Java 17+
-- MySQL 8.x
-- Linux / macOS / Windows(WSL 권장)
-
-### 4.2 Environment Variables
-`env` 또는 systemd override로 설정
-```ini
 # JWT secret key
 JWT_SECRET_KEY=a7eqx/zHFUfabeIU+XSeOwmssPNQ3WXmpBswTCQY7ypW8GNZmb5xQqjSpkfsgiw6DRQJhnGnj+Nd7gYYw9z4lw==
 
@@ -113,23 +102,18 @@ TEMP_PASSWORD_LENGTH=12
 AI_BASE_URL=http://127.0.0.1:8000
 ```
 
+4. 
+
 ---
 
-## 5. How to Run
+## 4. How to Run
 ```bash
 java -jar build/libs/*.jar --spring.profiles.active=prod
 ```
 
 ---
 
-## 6. How to Test
-```bash
-./gradlew test
-```
-
----
-
-## 7. Sample Data
+## 5. Sample Data
 테스트 계정:
 - ID:test00@abc.com
 - PW:12345678!
@@ -138,11 +122,11 @@ java -jar build/libs/*.jar --spring.profiles.active=prod
 
 ---
 
-## 8. Runtime Information
+## 6. Runtime Information
 - Backend API URL: https://api.seongkeum.com
 - Test Account 제공 (위 참조)
 
-## 9. Used Open Source
+## 7. Used Open Source
 - Spring Boot (Apache 2.0)
 - Spring Security (Apache 2.0)
 - Hibernate (LGPL)
