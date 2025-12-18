@@ -7,12 +7,14 @@ import com.dragon.stepbystep.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.util.AntPathMatcher;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,12 +27,21 @@ import java.util.List;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final List<String> EXCLUDED_PATHS = List.of(
-            "/api/auth/register",
-            "/api/auth/login",
-            "/api/auth/refresh",
-            "/api/auth/find-email",
-            "/api/auth/find-password"
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+
+    private static final List<ExcludedRequest> EXCLUDED_REQUESTS = List.of(
+            new ExcludedRequest("/health"),
+            new ExcludedRequest("/api/quiz/**"),
+            new ExcludedRequest("/api/auth/register"),
+            new ExcludedRequest("/api/auth/login"),
+            new ExcludedRequest("/api/auth/refresh"),
+            new ExcludedRequest("/api/auth/find-email"),
+            new ExcludedRequest("/api/auth/find-password"),
+            new ExcludedRequest("/api/moderation/guard-input", HttpMethod.POST),
+            new ExcludedRequest("/api/moderation/guard-output", HttpMethod.POST),
+            new ExcludedRequest("/api/moderation/filter-snippets", HttpMethod.POST),
+            new ExcludedRequest("/api/moderation/guard-batch", HttpMethod.POST),
+            new ExcludedRequest("/api/board/**", HttpMethod.GET)
     );
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -46,14 +57,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         ObjectMapper objectMapper = new ObjectMapper();
-
-        String path = request.getRequestURI();
-
-        // 특정 경로는 필터 적용 안 함
-        if (EXCLUDED_PATHS.stream().anyMatch(path::startsWith)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         try {
 
@@ -98,6 +101,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        if (HttpMethod.OPTIONS.matches(method)) {
+            return true;
+        }
+
+        return EXCLUDED_REQUESTS.stream()
+                .anyMatch(excludedRequest -> excludedRequest.matches(path, method));
+    }
+
     private String getTokenFromRequest(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
@@ -106,4 +122,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
+    private static final class ExcludedRequest {
+        private final String pattern;
+        private final List<HttpMethod> methods;
+
+        private ExcludedRequest(String pattern, HttpMethod... methods) {
+            this.pattern = pattern;
+            this.methods = List.of(methods);
+        }
+
+        private boolean matches(String path, String method) {
+            boolean pathMatches = PATH_MATCHER.match(pattern, path);
+            boolean methodMatches = methods.isEmpty() || methods.stream().anyMatch(httpMethod -> httpMethod.matches(method));
+            return pathMatches && methodMatches;
+        }
+    }
 }
