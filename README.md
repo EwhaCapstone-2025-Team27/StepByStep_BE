@@ -83,19 +83,34 @@ build/libs/stepbystep-0.0.1-SNAPSHOT.jar
 ### 4.2 Environment Variables
 `env` 또는 systemd override로 설정
 ```ini
-DB_URL=jdbc:mysql://localhost:3306/stepbystep
-DB_USERNAME=test
-DB_PASSWORD=test
+# JWT secret key
+JWT_SECRET_KEY=IxnW:H@Mr^Uo96ONfV}%wAk$6|}&>-d%Cl<cttb7JrR=6]Rs0~pC3z!~6G-c(&K
 
-JWT_SECRET=your_jwt_secret_key
+# Server Port (EC2 실행)
+SERVER_PORT=8080
 
-AI_BASE_URL=http://localhost:8000
+# DB (개발용은 RDS에 연결된 DB)
+DB_URL=jdbc:mysql://stepbystep-public-rds.chog8wcgurb6.ap-northeast-2.rds.amazonaws.com:3306/stepbystep?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&sslMode=REQUIRED
+DB_USERNAME=admin
+DB_PASSWORD=adminadmin
+DB_DRIVER=com.mysql.cj.jdbc.Driver
 
-MAIL_HOST=smtp.example.com
+# Mail
+MAIL_HOST=email-smtp.ap-northeast-2.amazonaws.com
 MAIL_PORT=587
-MAIL_USERNAME=test@example.com
-MAIL_PASSWORD=password
-MAIL_FROM=no-reply@example.com
+MAIL_USERNAME=AKIAVA5YLBOFLY6DNIVN
+MAIL_PASSWORD=BBBKgvw+p2rqA6VCea7k/ky0pyCoEWTZtPdQr+qlKtcp
+MAIL_SMTP_AUTH=false
+MAIL_SMTP_STARTTLS=false
+MAIL_FROM=no-reply@seongkeum.com
+MAIL_TEMP_PASSWORD_SUBJECT="성큼성큼 임시 비밀번호 안내"
+
+# Temp Password
+TEMP_PASSWORD_EXPIRATION_MINUTES=30
+TEMP_PASSWORD_LENGTH=12
+
+# AI 연결
+AI_BASE_URL=http://127.0.0.1:8000
 ```
 
 ---
