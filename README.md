@@ -35,26 +35,25 @@ StepByStep_BE/
 ├─ gradlew.bat
 ├─ .github/
 ├─ gradle/             # Gradle wrapper 설정
-├─ build/              # 빌드 산출물
+├─ build/              # 빌드 산출물 (로컬/CI 빌드 결과로 자동 생성)
 └─ src/
    ├─ main/
    │  ├─ java/com/dragon/stepbystep/
-   │  │  ├─ config
-   │  │  ├─ security
-   │  │  ├─ controller
-   │  │  ├─ service
-   │  │  ├─ repository
-   │  │  ├─ domain
-   │  │  ├─ dto
-   │  │  ├─ exception
-   │  │  ├─ ai
-   │  │  └─ common
+   │  │  ├─ config       # 전역 설정(Bean 등록, CORS, Swagger/Docs, Web 설정 등)
+   │  │  ├─ security     # Spring Security/JWT 인증·인가, 필터, 시큐리티 설정
+   │  │  ├─ controller   # REST API 엔드포인트(요청/응답), 입력 검증 및 라우팅
+   │  │  ├─ service      # 비즈니스 로직(트랜잭션 단위 처리), 도메인 규칙 구현
+   │  │  ├─ repository   # DB 접근 계층(JPA Repository), 영속성 관련 쿼리
+   │  │  ├─ domain       # 엔티티/도메인 모델(테이블 매핑, 핵심 상태/관계)
+   │  │  ├─ dto          # 요청/응답 DTO, 계층 간 데이터 전달용 객체
+   │  │  ├─ exception    # 예외 정의 및 전역 예외 처리(@ControllerAdvice 등)
+   │  │  ├─ ai           # AI(RAG/FastAPI 등) 연동 모듈(클라이언트, 요청/응답 모델)
+   │  │  └─ common       # 공통 유틸/상수/응답 포맷/공용 컴포넌트
    │  └─ resources/
-   │     └─ application.properties
+   │     └─ application.properties  # Spring 설정(프로필/DB/메일/로그 등, env 주입)
    └─ test/
       └─ java/com/dragon/stepbystep/
-         └─ StepByStepBeApplicationTests.java
-
+         └─ StepByStepBeApplicationTests.java  # 기본 애플리케이션 컨텍스트 테스트
 ```
 
 ---
@@ -62,6 +61,7 @@ StepByStep_BE/
 ## 3. How to Build
 
 ```bash
+git clone "git@github.com:EwhaCapstone-2025-Team27/StepByStep_BE.git"
 cd StepByStep_BE
 ./gradlew clean build
 ```
@@ -84,7 +84,7 @@ build/libs/stepbystep-0.0.1-SNAPSHOT.jar
 `env` 또는 systemd override로 설정
 ```ini
 # JWT secret key
-JWT_SECRET_KEY=IxnW:H@Mr^Uo96ONfV}%wAk$6|}&>-d%Cl<cttb7JrR=6]Rs0~pC3z!~6G-c(&K
+JWT_SECRET_KEY=a7eqx/zHFUfabeIU+XSeOwmssPNQ3WXmpBswTCQY7ypW8GNZmb5xQqjSpkfsgiw6DRQJhnGnj+Nd7gYYw9z4lw==
 
 # Server Port (EC2 실행)
 SERVER_PORT=8080
@@ -131,8 +131,10 @@ java -jar build/libs/*.jar --spring.profiles.active=prod
 
 ## 7. Sample Data
 테스트 계정:
-- ID:
-- PW:
+- ID:test00@abc.com
+- PW:12345678!
+
+> 테스트 계정으로 사용 시, 이메일 찾기와 비밀번호 찾기는 할 수 없습니다.
 
 ---
 
@@ -145,4 +147,4 @@ java -jar build/libs/*.jar --spring.profiles.active=prod
 - Spring Security (Apache 2.0)
 - Hibernate (LGPL)
 - JJWT (Apache 2.0)
-- MySQL Connector/J
+- MySQL Connector
