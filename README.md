@@ -28,11 +28,33 @@ Spring Boot 기반 REST API 서버로, 인증/인가, 사용자 관리, 퀴즈, 
 ## 2. Repository Structure
 ```text
 StepByStep_BE/
-├─ src/main/java
-├─ src/main/resources
+├─ README.md
 ├─ build.gradle
-├─ application.yml
-└─ ...
+├─ settings.gradle
+├─ gradlew
+├─ gradlew.bat
+├─ .github/
+├─ gradle/             # Gradle wrapper 설정
+├─ build/              # 빌드 산출물
+└─ src/
+   ├─ main/
+   │  ├─ java/com/dragon/stepbystep/
+   │  │  ├─ config
+   │  │  ├─ security
+   │  │  ├─ controller
+   │  │  ├─ service
+   │  │  ├─ repository
+   │  │  ├─ domain
+   │  │  ├─ dto
+   │  │  ├─ exception
+   │  │  ├─ ai
+   │  │  └─ common
+   │  └─ resources/
+   │     └─ application.properties
+   └─ test/
+      └─ java/com/dragon/stepbystep/
+         └─ StepByStepBeApplicationTests.java
+
 ```
 
 ---
