@@ -9,7 +9,6 @@ public class ChatMessageRequest {
     @NotBlank
     private String message;
 
-    @NotBlank
     private String userId;
 
     private Integer top_k;

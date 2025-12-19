@@ -18,9 +18,19 @@ public class ChatService {
 
     public ChatResponse chat(ChatMessageRequest request, Authentication authentication) {
         String headerUserId = resolveHeaderUserId(authentication, request.getUserId());
+        request.setUserId(headerUserId);
+        if (request.getTop_k() == null) {
+            request.setTop_k(5);
+        }
+        if (request.getEnable_bm25() == null) {
+            request.setEnable_bm25(true);
+        }
+        if (request.getEnable_rrf() == null) {
+            request.setEnable_rrf(true);
+        }
         ChatResponse response = ragClient.chat(request, headerUserId);
 
-        Long rewardUserId = resolveNumericUserId(authentication, request.getUserId());
+        Long rewardUserId = resolveNumericUserId(authentication, headerUserId);
         if (rewardUserId != null) {
             pointRewardService.rewardForChatQuestion(rewardUserId);
         }
