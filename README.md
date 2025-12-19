@@ -62,7 +62,7 @@ StepByStep_BE/
 
 1. 깃허브 Repository 클론
 ```bash
-git clone
+git clone https://github.com/EwhaCapstone-2025-Team27/StepByStep_BE.git
 ```
 
 2. BE 폴더로 이동
