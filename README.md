@@ -1,13 +1,15 @@
 # 성큼성큼 - Backend
 
-해당 리포지토리는 청소년 성교육 앱 **성큼성큼**의 백엔드 서버 코드를 포함하고 있습니다.</p>
-본 서버는 Spring Boot 기반 REST API로 구성되어 있으며,</br>
-사용자 인증/인가, 시나리오 퀴즈 학습, 익명 게시판, 포인트·배지 시스템 및 AI(RAG) 서버 연동을 담당합니다.
+해당 리포지토리는 청소년 성교육 앱 **성큼성큼**의 백엔드 서버 코드를 포함하고 있습니다.  
+본 서버는 Spring Boot 기반 REST API로 구성되어 있으며 사용자 인증/인가, 시나리오 퀴즈 학습,
+익명 게시판, 포인트·배지 시스템 및 AI(RAG) 서버 연동을 담당합니다.
 
 ---
 
 ## 📁 Source Code 설명
+
 본 프로젝트의 주요 디렉토리 구조는 다음과 같습니다:
+
 ```text
 StepByStep_BE/
 ├── src/
@@ -38,14 +40,17 @@ StepByStep_BE/
 
 ## 🛠️ How to Build
 
-**1. GitHub 저장소 클론**
+### 1️⃣ GitHub 저장소 클론
+
 ```bash
 git clone https://github.com/EwhaCapstone-2025-Team27/StepByStep_BE.git
 cd StepByStep_BE
 ```
 
-**2. 환경 설정 파일 (.env) 준비**
-프로젝트 루트 경로에 .env 파일을 생성하고 아래 환경변수를 설정합니다.
+### 2️⃣ 환경 설정 파일 (.env) 준비
+
+프로젝트 루트 경로에 `.env` 파일을 생성하고 아래 환경변수를 설정합니다.
+
 ```text
 # JWT secret key
 JWT_SECRET_KEY=<본인 JWT SECRET KEY>
@@ -77,10 +82,14 @@ TEMP_PASSWORD_LENGTH=12
 AI_BASE_URL=http://127.0.0.1:8000
 ```
 
-**3. 빌드**
+> 💡 `.env` 파일은 보안상 Git에 포함되지 않습니다.
+
+### 📦 빌드
+
 ```bash
 ./gradlew clean build
 ```
+
 * Gradle Wrapper를 사용하여 의존성을 자동 설치합니다.
 * `build/libs/` 디렉토리에 실행 가능한 `.jar` 파일이 생성됩니다.
 
@@ -88,12 +97,14 @@ AI_BASE_URL=http://127.0.0.1:8000
 
 ## 🚀 How to Install & Run
 
-**1. Gradle로 실행 (로컬)**
+### 1️⃣ Gradle로 실행 (로컬)
+
 ```bash
 ./gradlew bootRun
 ```
 
-**2. JAR 파일 실행**
+### 2️⃣ JAR 파일 실행
+
 ```bash
 java -jar build/libs/stepbystep-0.0.1-SNAPSHOT.jar
 ```
@@ -101,28 +112,36 @@ java -jar build/libs/stepbystep-0.0.1-SNAPSHOT.jar
 ---
 
 ## 📮 How to Test
-**Postman을 이용한 API 테스트**
-본 서버는 JWT 기반 인증을 사용합니다. </br>
+
+### ✅ Postman을 이용한 API 테스트
+
+본 서버는 JWT 기반 인증을 사용합니다.  
 로그인 API 호출 후 발급받은 토큰을 모든 요청에 포함해야 합니다.
-```bash
+
+```text
 Authorization: Bearer {ACCESS_TOKEN}
 Content-Type: application/json
 ```
 
 ### 🧪 주요 API 테스트 예시
 
-**1. 로그인**
+#### 1. 로그인
+
 * `POST /api/auth/login`: 기존에 있는 테스트 계정을 사용합니다.
+
 ```json
 {
   "email": "test00@abc.com",
   "password": "12345678!"
 }
 ```
+
 응답으로 나온 accessToken을 이후 요청에 사용합니다.
 
-**2. AI 챗봇 상답**
+#### 2. AI 챗봇 상담
+
 * `POST /api/chat`
+
 ```json
 {
   "message": "질문",
@@ -135,16 +154,20 @@ Content-Type: application/json
 
 ---
 
-## 📦 사용한 Open Source
-- Spring Boot
-- Spring Security
-- Spring Data JPA (Hibernate)
-- JJWT
-- MySQL Connector/J
-- Lombok
+## 📦 사용한 Open Source 및 외부 라이브러리
+
+`build.gradle`에 명시된 주요 라이브러리는 다음과 같습니다:
+
+* Spring Boot
+* Spring Security
+* Spring Data JPA (Hibernate)
+* JJWT
+* MySQL Connector/J
+* Lombok
 
 ---
 
 ## 🔗 외부 서비스 연동
-- **AI RAG Server (FastAPI)** </br>
-성교육 문서 기반 질의응답을 제공하기 위해 별도의 AI 서버와 HTTP 통신 방식으로 연동됩니다.
+
+* **AI RAG Server (FastAPI)**  
+  성교육 문서 기반 질의응답을 제공하기 위해 별도의 AI 서버와 HTTP 통신 방식으로 연동됩니다.
