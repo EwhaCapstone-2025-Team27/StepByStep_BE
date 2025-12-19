@@ -28,6 +28,15 @@ public class ChatService {
         if (request.getEnable_rrf() == null) {
             request.setEnable_rrf(true);
         }
+        log.info(
+                "[CHAT->AI] headerUserId={}, body.userId={}, message='{}', top_k={}, bm25={}, rrf={}",
+                headerUserId,
+                request.getUserId(),
+                request.getMessage(),
+                request.getTop_k(),
+                request.getEnable_bm25(),
+                request.getEnable_rrf()
+        );
         ChatResponse response = ragClient.chat(request, headerUserId);
 
         Long rewardUserId = resolveNumericUserId(authentication, headerUserId);
