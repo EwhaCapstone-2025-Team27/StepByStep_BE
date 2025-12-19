@@ -19,7 +19,7 @@ Spring Boot 기반 REST API 서버로, 인증/인가, 사용자 관리, 퀴즈, 
 - JWT 기반 인증/인가
 - 사용자/프로필 관리
 - AI(RAG) 서버 연동 API
-- 퀴즈 및 시나리오 관리
+- 시나리오 퀴즈 학습
 - 포인트/배지 시스템
 - 게시판 API
 
@@ -58,27 +58,23 @@ StepByStep_BE/
 
 ---
 
-## 3. How to Install
+## 3. How to Build
 
-1. 깃허브 Repository 클론
-```bash
+### 1. Git Clone
+```text
 git clone https://github.com/EwhaCapstone-2025-Team27/StepByStep_BE.git
-```
-
-2. BE 폴더로 이동
-```bash
 cd StepByStep_BE
 ```
 
-3. 프로젝트 최상위 디렉토리에 .env 파일 생성
-```bash
+### 2. 프로젝트 최상위 디렉토리에 .env 파일 생성 (환경변수 설정)
+```text
 # JWT secret key
-JWT_SECRET_KEY=a7eqx/zHFUfabeIU+XSeOwmssPNQ3WXmpBswTCQY7ypW8GNZmb5xQqjSpkfsgiw6DRQJhnGnj+Nd7gYYw9z4lw==
+JWT_SECRET_KEY=<본인 JWT SECRET KEY>
 
 # Server Port (EC2 실행)
 SERVER_PORT=8080
 
-# DB (개발용은 RDS에 연결된 DB)
+# DB (RDS에 연결된 DB)
 DB_URL=jdbc:mysql://stepbystep-public-rds.chog8wcgurb6.ap-northeast-2.rds.amazonaws.com:3306/stepbystep?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&sslMode=REQUIRED
 DB_USERNAME=admin
 DB_PASSWORD=adminadmin
@@ -102,31 +98,47 @@ TEMP_PASSWORD_LENGTH=12
 AI_BASE_URL=http://127.0.0.1:8000
 ```
 
-4. 
+### 3. Build
+```text
+./gradlew clean build
+``` 
 
 ---
 
 ## 4. How to Run
-```bash
-java -jar build/libs/*.jar --spring.profiles.active=prod
+### 로컬 실행
+```text
+./gradlew bootRun
 ```
 
 ---
 
-## 5. Sample Data
-테스트 계정:
-- ID:test00@abc.com
-- PW:12345678!
-
-> 테스트 계정으로 사용 시, 이메일 찾기와 비밀번호 찾기는 할 수 없습니다.
+## 5. How to Test
+### Postman으로 테스트
+Authorization 탭에서 Auth Type은 Bearer Token으로 설정하고 Token 입력란에 로그인하여 받은 토큰을 입력해야 합니다. </br>
+그리고 Header 탭에서 새로운 변수로 Content-Type을 추가하고 값은 application/json으로 지정합니다. </br>
+* `POST /api/auth/login`: 로그인 (테스트 계정을 사용합니다.)
+```json
+{
+	"email": "test00@abc.com",
+	"password": "12345678!"
+}
+```
+응답으로 나온 accessToken을 사용합니다.
+* `POST /api/chat`: 챗봇 상담
+```json
+{
+  "message": "질문",
+  "userId": "string",
+  "top_k": 8,
+  "enable_bm25": true,
+  "enable_rrf": true
+}
+```
 
 ---
 
-## 6. Runtime Information
-- Backend API URL: https://api.seongkeum.com
-- Test Account 제공 (위 참조)
-
-## 7. Used Open Source
+## 6. Used Open Source
 - Spring Boot (Apache 2.0)
 - Spring Security (Apache 2.0)
 - Hibernate (LGPL)
