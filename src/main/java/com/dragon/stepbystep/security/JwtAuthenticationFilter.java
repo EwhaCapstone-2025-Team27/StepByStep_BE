@@ -31,7 +31,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final List<ExcludedRequest> EXCLUDED_REQUESTS = List.of(
             new ExcludedRequest("/health"),
-            new ExcludedRequest("/api/quiz/**"),
             new ExcludedRequest("/api/auth/register"),
             new ExcludedRequest("/api/auth/login"),
             new ExcludedRequest("/api/auth/refresh"),
@@ -40,8 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             new ExcludedRequest("/api/moderation/guard-input", HttpMethod.POST),
             new ExcludedRequest("/api/moderation/guard-output", HttpMethod.POST),
             new ExcludedRequest("/api/moderation/filter-snippets", HttpMethod.POST),
-            new ExcludedRequest("/api/moderation/guard-batch", HttpMethod.POST),
-            new ExcludedRequest("/api/board/**", HttpMethod.GET)
+            new ExcludedRequest("/api/moderation/guard-batch", HttpMethod.POST)
     );
 
     private final JwtTokenProvider jwtTokenProvider;
