@@ -28,7 +28,13 @@ public class QuizController {
             @RequestBody QuizAttemptCreateRequestDto request,
             Authentication authentication
     ) {
-        Long userId = authentication != null ? Long.valueOf(authentication.getName()) : 0L;
+        if (authentication == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED,
+                    "인증이 필요합니다."
+            );
+        }
+        Long userId = Long.valueOf(authentication.getName());
         return ResponseEntity.ok(quizService.createAttempt(request, userId));
     }
 

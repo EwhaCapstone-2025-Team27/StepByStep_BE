@@ -53,7 +53,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(
                                 "/health",
-                                "/api/quiz/**",
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
@@ -68,7 +67,7 @@ public class SecurityConfig {
                                 "/api/moderation/guard-batch"
                         ).permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/api/board/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/board/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/board/**").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/board/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/board/**").authenticated()
