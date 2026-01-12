@@ -52,34 +52,33 @@ cd StepByStep_BE
 프로젝트 루트 경로에 `.env` 파일을 생성하고 아래 환경변수를 설정합니다.
 
 ```text
-# JWT secret key
-JWT_SECRET_KEY=<본인 JWT SECRET KEY>
+# JWT
+JWT_SECRET_KEY=your_jwt_secret_key
 
-# Server Port (EC2 실행)
+# Server
 SERVER_PORT=8080
 
-# DB (RDS에 연결된 DB)
-DB_URL=jdbc:mysql://stepbystep-public-rds.chog8wcgurb6.ap-northeast-2.rds.amazonaws.com:3306/stepbystep?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul&sslMode=REQUIRED
-DB_USERNAME=admin
-DB_PASSWORD=adminadmin
-DB_DRIVER=com.mysql.cj.jdbc.Driver
+# Database
+DB_URL=jdbc:mysql://<RDS-ENDPOINT>:3306/<DB_NAME>
+DB_USERNAME=your_db_username
+DB_PASSWORD=your_db_password
 
 # Mail
 MAIL_HOST=email-smtp.ap-northeast-2.amazonaws.com
 MAIL_PORT=587
-MAIL_USERNAME=AKIAVA5YLBOFLY6DNIVN
-MAIL_PASSWORD=BBBKgvw+p2rqA6VCea7k/ky0pyCoEWTZtPdQr+qlKtcp
-MAIL_SMTP_AUTH=false
-MAIL_SMTP_STARTTLS=false
-MAIL_FROM=no-reply@seongkeum.com
-MAIL_TEMP_PASSWORD_SUBJECT="성큼성큼 임시 비밀번호 안내"
+MAIL_USERNAME=your_smtp_username
+MAIL_PASSWORD=your_smtp_password
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+MAIL_FROM=no-reply@yourdomain.com
+MAIL_TEMP_PASSWORD_SUBJECT="임시 비밀번호 안내"
 
-# Temp Password
+# Temp Password Policy
 TEMP_PASSWORD_EXPIRATION_MINUTES=30
 TEMP_PASSWORD_LENGTH=12
 
-# AI 연결
-AI_BASE_URL=http://127.0.0.1:8000
+# AI
+AI_BASE_URL=http://localhost:8000
 ```
 
 > 💡 `.env` 파일은 보안상 Git에 포함되지 않습니다.
